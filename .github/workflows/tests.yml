@@ -23,8 +23,34 @@ jobs:
       - name: Sync dependencies
         run: uv sync --python 3.12
 
+      - name: Install MinGW-w64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: mingw-w64-x86_64-gcc
+
+      - name: Build isolated native extension
+        shell: pwsh
+        run: |
+          $env:PATH = "C:\msys64\mingw64\bin;$env:PATH"
+          $include = uv run python -c "import sysconfig; print(sysconfig.get_paths()['include'])"
+          $out = Join-Path $pwd 'build-ci'
+          ./scripts/build-native-effect-loader.ps1 -PythonInclude $include -OutputDirectory $out -ModuleSuffix ci
+          Get-ChildItem $out | Select-Object Name, Length
+
+      - name: Verify native build without FL
+        shell: pwsh
+        run: |
+          $pyd = Join-Path $pwd 'build-ci/_flmcp_native_ci.pyd'
+          uv run python scripts/verify-native-build.py $pyd
+          if ($LASTEXITCODE -ne 0) { throw 'native build verification failed' }
+
       - name: Lint
         run: uv run ruff check src tests
 
       - name: Test
-        run: uv run pytest -q
+        shell: pwsh
+        run: |
+          $env:FLMCP_NATIVE_PYD = Join-Path $pwd 'build-ci/_flmcp_native_ci.pyd'
+          uv run pytest -q
+          if ($LASTEXITCODE -ne 0) { throw 'pytest failed' }
