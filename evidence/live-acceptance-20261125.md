@@ -28,3 +28,20 @@ so `load_state` steps reported no queue ID. Commit `2b6fbef` preserves both;
 a repeat clone after the fix reported a queue ID on `load_state` and 5 status IDs.
 
 Offline checks after the fix: 116 tests passed, Ruff clean, `git diff --check` clean.
+
+## Follow-up acceptance (same build, later session)
+
+Second run against the gate-test build (`608b03eb...47a`, includes the
+downgrade-only `test_override` hook). Controller active on PID 59432.
+
+| Check | Result |
+| --- | --- |
+| Adjacent-slot isolation | `fl_clone_mixer_effect_full(0,9 -> 0,8)` matched; slot 8 digest equals source, slot 9 digest unchanged |
+| Arrangement switch + clip insert | Created arrangement 1, switched, inserted pattern clip on track 15 at tick 0 (readback: length 384, source pattern 1, `verified=true`), switched back, deleted test arrangement |
+| Automation point edit | Created automation source on mixer 0/9 param 0 (channel 5, event `0x70078000`), listed 2 points, dry-run inert, committed 0.0 -> 0.1 and read back 0.10000000149 (float precision) |
+| Undo | Second value edit 0.1 -> 0.25; one `general.undo` restored 0.10000000149 exactly (`restored=true`) |
+| Thread diagnosis | `TFruityLoopsMainForm` HWND 2297424: GUI thread id 63660, process id 59432; RPC heartbeat in `native_rpc/59432` revision 12, same pid. No cross-thread or re-entry symptom observed; no scheduling change made |
+
+Note: `general.undo` after adding an arrangement undid a different edit first,
+so the Undo check was repeated on a controllable automation value to verify
+restoration unambiguously.
