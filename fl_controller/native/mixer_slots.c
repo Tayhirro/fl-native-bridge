@@ -11,6 +11,14 @@ typedef void (*PrepareInsert)(void *manager, void *label, int track, int slot);
 typedef void (*LoadPreset)(void *slot, int mode, void *path, void *display_name,
                            unsigned char apply, unsigned char show_editor);
 
+/* The digest comparison is kept separate from file I/O so it can be tested
+ * with a wrong digest without loading a fake FLEngine_x64.dll into the test
+ * process. Both the real file check and the test call this same function. */
+int fl_engine_digest_matches(const BYTE *digest, DWORD digest_size) {
+    return digest && digest_size == sizeof(engine_sha256)
+        && !memcmp(digest, engine_sha256, sizeof(engine_sha256));
+}
+
 static int matches_engine_file(const wchar_t *path) {
     HANDLE file = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_DELETE,
                               NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
@@ -32,7 +40,7 @@ static int matches_engine_file(const wchar_t *path) {
         ok = CryptHashData(hash, buffer, read, 0);
     }
     ok = ok && CryptGetHashParam(hash, HP_HASHVAL, digest, &digest_size, 0)
-        && digest_size == sizeof(digest) && !memcmp(digest, engine_sha256, sizeof(digest));
+        && fl_engine_digest_matches(digest, digest_size);
     if (hash) {
         CryptDestroyHash(hash);
     }

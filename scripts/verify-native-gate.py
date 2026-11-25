@@ -44,6 +44,20 @@ def verify(module) -> list[str]:
         if not ok:
             raise AssertionError(f"{label}: expected {expected!r}, got {value!r}")
 
+    profile_digest = bytes.fromhex(
+        "6d9c5ab09c1d5594012ac2c31cf9ed08e73f42164ed0964cccae10a95d9b8e02")
+    checks.append(f"PASS digest gate available: {hasattr(module, 'check_engine_digest')}")
+    if not hasattr(module, "check_engine_digest"):
+        raise AssertionError("extension has no digest comparison hook")
+    if not module.check_engine_digest(profile_digest):
+        raise AssertionError("compiled profile digest does not self-match")
+    checks.append("PASS digest self-match")
+    wrong = bytearray(profile_digest)
+    wrong[0] ^= 1
+    if module.check_engine_digest(bytes(wrong)) or module.check_engine_digest(profile_digest[:16]):
+        raise AssertionError("wrong/short digest was accepted")
+    checks.append("PASS wrong and short digests refused")
+
     record("no engine", refusal(module, "project.save_copy", save),
            "Engine is not initialized")
 

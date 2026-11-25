@@ -35,4 +35,4 @@ def test_native_gate_failure_matrix():
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert "Gate verification passed" in result.stdout
-    assert result.stdout.count("PASS ") >= 12
+    assert result.stdout.count("PASS ") >= 15

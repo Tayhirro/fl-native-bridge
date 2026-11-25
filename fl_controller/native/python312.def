@@ -25,3 +25,4 @@ EXPORTS
     PyList_New
     PyList_Append
     PyUnicode_FromString
+    PyBool_FromLong

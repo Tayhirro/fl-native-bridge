@@ -156,6 +156,19 @@ static PyObject *execute(PyObject *self, PyObject *args) {
     return NULL;
 }
 
+/* Test-only digest comparison. Accepts a 32-byte value; returns whether it
+ * matches the compiled profile. Production never calls this path. */
+static PyObject *check_engine_digest(PyObject *self, PyObject *args) {
+    (void)self;
+    const char *digest;
+    Py_ssize_t length;
+    if (!PyArg_ParseTuple(args, "y#:check_engine_digest", &digest, &length)) {
+        return NULL;
+    }
+    return PyBool_FromLong(fl_engine_digest_matches(
+        (const BYTE *)digest, (DWORD)length));
+}
+
 static PyObject *test_override(PyObject *self, PyObject *args) {
     (void)self;
     const char *operation, *field, *state = NULL;
@@ -171,6 +184,8 @@ static PyMethodDef methods[] = {
     {"execute", execute, METH_VARARGS, "Execute a named native operation."},
     {"test_override", test_override, METH_VARARGS,
      "Test-only: downgrade one evidence field; cannot raise the gate."},
+    {"check_engine_digest", check_engine_digest, METH_VARARGS,
+     "Test-only: compare a digest with the compiled profile."},
     {NULL, NULL, 0, NULL},
 };
 
