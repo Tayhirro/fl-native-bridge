@@ -40,12 +40,17 @@ in `SEMANTIC_NATIVE.md`, `NATIVE_BRIDGE.md` and the [verification records](evide
 | Build tools | none, unless you want to recompile (then MinGW-w64 `gcc`/`dlltool` + CPython 3.12 headers) |
 
 The extension refuses to load when the detected engine profile does not match, so a
-wrong FL version fails closed instead of writing to the wrong addresses. Writing
-operations carry a second gate: `mixer.insert_empty_slot`, `mixer.remove_effect`
-and `project.save_copy` each declare their function-entry, global-address, object
-layout and calling-convention evidence, checked before the handler runs and
-reported through `fl_list_capabilities()` under `native.dependencies`. An
-unverified dependency refuses the operation without touching FL memory.
+wrong FL version fails closed instead of writing to the wrong addresses. Every
+native operation carries a dependency entry, declared in one table that also
+produces the advertised operation catalogue. Each entry separates function-entry,
+global-address, object-layout and calling-convention evidence and is checked
+before its handler runs; `fl_list_capabilities()` reports the same map under
+`native.dependencies`. `evidence: independent` means the entry was separately
+observed on this build and its recorded byte signature is compared against the
+live image; `build-gated` means only the exact SHA-256 plus in-handler checks
+apply. Dynamic vtable entries and entries with no recorded byte signature are
+deliberately labelled `build-gated` rather than overstated. An unverified
+dependency refuses the operation without touching FL memory.
 
 ## Install
 
