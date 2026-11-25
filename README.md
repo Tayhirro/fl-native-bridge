@@ -8,6 +8,11 @@ stops where FL's own UI stops: you can move a clip, you cannot replace a plugin'
 state. This project loads a compiled extension into FL and works one layer lower,
 which is what makes operations like full-state effect cloning possible.
 
+![FL Studio being driven over MCP: notes written into a new pattern's piano roll](docs/demo.gif)
+
+*Captured from a real FL Studio 26.1.7.5654 session — the window is the live
+application, driven entirely by tool calls, with the caption track naming each step.*
+
 ## What this does that the public API cannot
 
 | Operation | Public API | This bridge |
