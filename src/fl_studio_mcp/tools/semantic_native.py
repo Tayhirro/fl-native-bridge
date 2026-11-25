@@ -181,8 +181,10 @@ def parse_flp_plugin_states(flp_bytes: bytes) -> dict:
 def _checked_effect_preset(path: Path) -> Path:
     path = path.resolve(strict=True)
     folders = [part.casefold() for part in path.parent.parts]
-    database = folders.index("plugin database") if "plugin database" in folders else -1
-    presets = folders.index("plugin presets") if "plugin presets" in folders else -1
+    database = next((i for i in range(len(folders) - 1, -1, -1)
+                     if folders[i].startswith("plugin database")), -1)
+    presets = next((i for i in range(len(folders) - 1, -1, -1)
+                    if folders[i].startswith("plugin presets")), -1)
     origin = max(database, presets)
     relative = folders[origin + 1 :] if origin >= 0 else []
     if (origin < 0 or (relative[:1] != ["effects"]
@@ -458,7 +460,11 @@ def fl_load_plugin_preset(
 def _checked_generator_preset(path: Path) -> Path:
     path = path.resolve(strict=True)
     folders = [part.casefold() for part in path.parent.parts]
-    database = folders.index("plugin database") if "plugin database" in folders else -1
+    # FL ships the factory database as "Plugin database (alphabetical)". Match the
+    # prefix, taking the DEEPEST hit: a shallower "Plugin databases" (plural)
+    # folder would otherwise win and hide the real database folder.
+    database = next((i for i in range(len(folders) - 1, -1, -1)
+                     if folders[i].startswith("plugin database")), -1)
     relative = folders[database + 1 :]
     if (database < 0 or (relative[:1] != ["generators"]
                          and relative[:2] != ["installed", "generators"])

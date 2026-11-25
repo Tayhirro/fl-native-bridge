@@ -297,12 +297,18 @@ def test_generator_rejects_plugin_name_mismatch(semantic, monkeypatch, tmp_path)
 def test_generator_tool_validates_fst_and_reports_verified(monkeypatch, tmp_path):
     from fl_studio_mcp.tools import semantic_native as tools
 
-    # Build a minimal but structurally valid FLhd/FLdt FST under a Generators DB folder.
-    db = tmp_path / "Plugin database" / "Generators"
+    # Place the fixture on the factory path the resolver actually searches:
+    # engine_path.parent/Data/System/Plugin databases/Plugin database (alphabetical).
+    # The old location was never searched, so the test only passed on hosts with FL.
+    db = (tmp_path / "Data" / "System" / "Plugin databases"
+          / "Plugin database (alphabetical)" / "Generators")
     db.mkdir(parents=True)
     preset = db / "3x Osc.fst"
-    payload = b"FLdt"
-    header = b"FLhd\x06\0\0\0\x30\0" + b"\0" * 4 + payload + len(payload).to_bytes(4, "little")
+    # FLdt's length word covers the event stream only (empty here), and the
+    # validator requires it to equal file_size - 22.
+    body = b""
+    header = (b"FLhd\x06\0\0\0\x30\0" + b"\0" * 4 + b"FLdt"
+              + len(body).to_bytes(4, "little") + body)
     preset.write_bytes(header)
 
     class Connection:
@@ -326,6 +332,9 @@ def test_generator_tool_validates_fst_and_reports_verified(monkeypatch, tmp_path
         "native": {"available": True, "operations": ["channel.add_generator"],
                    "engine_path": str(tmp_path / "FLEngine_x64.dll")},
     })
+    # Pin Path.home so the search never reaches a real FL install on the host.
+    # Pin Path.home so the search never reaches a real FL install on the host.
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
     result = tools.fl_add_generator("3x Osc")
     assert result["success"] and result["state"] == "verified"
     assert result["channel_verified"] and result["source_path_verified"]
