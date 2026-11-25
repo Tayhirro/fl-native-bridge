@@ -70,5 +70,20 @@ enum {
     PROJECT_SAVE_WORKER = 0xb54570,
 };
 
+/* Observed entry bytes for independently verified functions. 0x?? entries are
+ * wildcards, written as a separate mask so the comparison stays explicit.
+ * These are the signatures recorded when the RVA was first identified; a
+ * mismatch means the live engine image is not the one this profile describes.
+ * The three FX/save-write entries are resolved from a vtable at runtime and
+ * have no static byte constant in this build, so they stay build-gated. */
+static const unsigned char recount_clips_bytes[17] = {
+    0x57, 0x56, 0x53, 0x48, 0x83, 0xEC, 0x20, 0x48,
+    0x89, 0xCB, 0xC7, 0x43, 0x48, 0x00, 0x00, 0x00, 0x00,
+};
+static const unsigned char set_clip_range_bytes[12] = {
+    0x55, 0x56, 0x53, 0x48, 0x83, 0xEC, 0x60, 0x48,
+    0x8B, 0xEC, 0x66, 0x44,
+};
+
 
 #endif

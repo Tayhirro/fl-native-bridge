@@ -43,12 +43,14 @@ static OperationDependency dependencies[] = {
     /* --- independent entry evidence (recorded in the engine profile) --- */
     {"playlist.trim_clip", SET_CLIP_SOURCE_RANGE, TEXT_START, TEXT_END,
      "verified", "verified", "verified", 1, "independent"},
+    /* Static RVA was observed, but no byte signature was recorded for these;
+     * they do not get the "independent" label (no invented evidence). */
     {"automation.create_source", CREATE_AUTOMATION, TEXT_START, TEXT_END,
-     "verified", "verified", "verified", 1, "independent"},
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
     {"pattern.add_notes", RECORD_NOTE_ON, TEXT_START, TEXT_END,
-     "verified", "verified", "verified", 1, "independent"},
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
     {"pattern.write_notes", RECORD_NOTE_ON, TEXT_START, TEXT_END,
-     "verified", "verified", "verified", 1, "independent"},
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
 
     /* --- FX writes: dynamic vtable entry, build-gated --- */
     {"mixer.insert_empty_slot", 0, TEXT_START, TEXT_END,
@@ -120,6 +122,30 @@ static OperationDependency dependencies[] = {
 /* Non-NULL only when a test explicitly installs a fake engine. Never set by
  * production code; the real engine pointer from ModuleState always wins. */
 static const unsigned char *test_engine = NULL;
+
+/* Entry-byte signatures for the independently verified operations. Matched
+ * against the live engine image before those operations run. Operations with
+ * a dynamically resolved vtable entry have no entry here by design. */
+typedef struct {
+    uint32_t rva;
+    const unsigned char *bytes;
+    size_t length;
+} EntrySignature;
+
+static const EntrySignature entry_signatures[] = {
+    {RECOUNT_ACTIVE_CLIPS, recount_clips_bytes, sizeof(recount_clips_bytes)},
+    {SET_CLIP_SOURCE_RANGE, set_clip_range_bytes, sizeof(set_clip_range_bytes)},
+};
+
+static const EntrySignature *signature_for(uint32_t rva) {
+    size_t index;
+    for (index = 0; index < sizeof(entry_signatures) / sizeof(entry_signatures[0]); ++index) {
+        if (entry_signatures[index].rva == rva) {
+            return &entry_signatures[index];
+        }
+    }
+    return NULL;
+}
 
 static int state_rank(const char *state) {
     if (!strcmp(state, "verified")) {
@@ -195,7 +221,10 @@ int fl_test_override(const char *operation, const char *field, const char *state
     return 1;
 }
 
-static int image_readable(const unsigned char *engine, uint32_t rva) {
+/* Validate a static entry against the live image. When a byte signature is
+ * available it is compared in full; otherwise only the weakest plausible-
+ * prologue check applies, and describe() labels that entry build-gated. */
+static int entry_bytes_valid(const unsigned char *engine, uint32_t rva) {
     MEMORY_BASIC_INFORMATION info;
     const void *address = engine + rva;
     if (rva < 0x1000 || !VirtualQuery(address, &info, sizeof(info)) ||
@@ -203,7 +232,14 @@ static int image_readable(const unsigned char *engine, uint32_t rva) {
             (info.Protect & (PAGE_NOACCESS | PAGE_GUARD))) {
         return 0;
     }
-    /* A plausible function prologue is neither 00-filled nor FF-filled. */
+    const EntrySignature *signature = signature_for(rva);
+    if (signature) {
+        uintptr_t delta = (uintptr_t)address - (uintptr_t)info.BaseAddress;
+        if (signature->length > info.RegionSize - delta) {
+            return 0;
+        }
+        return !memcmp(address, signature->bytes, signature->length);
+    }
     unsigned char first = *(const unsigned char *)address;
     return first != 0x00 && first != 0xFF;
 }
@@ -232,7 +268,7 @@ const char *fl_dependency_gate(const char *operation, const unsigned char *engin
                 dependency->entry_rva >= dependency->entry_high) {
             return "Function RVA is outside the verified text range";
         }
-        if (engine != test_engine && !image_readable(engine, dependency->entry_rva)) {
+        if (engine != test_engine && !entry_bytes_valid(engine, dependency->entry_rva)) {
             return "Function bytes failed the image self-check";
         }
     }
@@ -252,12 +288,14 @@ PyObject *fl_describe_dependencies(void) {
          * range and the exact-build hash; that is build-gated evidence, not
          * an independent proof of the function's identity. */
         PyObject *entry = Py_BuildValue(
-            "{s:s,s:s,s:s,s:s,s:s,s:i,s:i,s:i,s:i}",
+            "{s:s,s:s,s:s,s:s,s:s,s:s,s:i,s:i,s:i,s:i}",
             "function_entry", dependency->entry_rva ? "verified" : "build-gated",
             "global_addresses", dependency->globals_state,
             "object_layout", dependency->layout_state,
             "calling_convention", dependency->callconv_state,
             "evidence", dependency->evidence,
+            "entry_bytes", signature_for(dependency->entry_rva)
+                           ? "signature-matched" : "range-and-prologue",
             "entry_rva", (int)dependency->entry_rva,
             "rva_low", (int)dependency->entry_low,
             "rva_high", (int)dependency->entry_high,

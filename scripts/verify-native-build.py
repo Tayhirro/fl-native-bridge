@@ -48,7 +48,11 @@ def main() -> int:
     if evidence != {"independent", "build-gated"}:
         print(f"FAIL evidence categories incomplete: {evidence}")
         return 1
-    print(f"PASS operation table: {len(operations)} operations, catalogue unified")
+    signed = [k for k, d in dependencies.items() if d.get("entry_bytes") == "signature-matched"]
+    if not signed:
+        print("FAIL no operation has a recorded entry-byte signature")
+        return 1
+    print(f"PASS operation table: {len(operations)} ops, {len(signed)} byte-signed, unified")
 
     try:
         module.initialize()
