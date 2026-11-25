@@ -183,6 +183,7 @@ def test_sampler_partial_status_does_not_claim_source_verified(semantic, monkeyp
 
 def test_sampler_tool_preflights_wav_and_reports_partial(monkeypatch, tmp_path):
     import wave
+
     from fl_studio_mcp.tools import semantic_native as tools
 
     path = tmp_path / "test.wav"

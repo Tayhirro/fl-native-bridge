@@ -1,7 +1,7 @@
 """Native Windows desktop tools and asset workflows for FL Studio."""
 
-from pathlib import Path
 import time
+from pathlib import Path
 
 
 def register_desktop_tools(mcp):

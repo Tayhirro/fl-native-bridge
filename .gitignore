@@ -1,6 +1,5 @@
 .venv/
 .claude/
-uv.lock
 fl_controller/__pycache__/
 # Local dev snapshots (kept outside the repo).
 backups/

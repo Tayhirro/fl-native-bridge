@@ -1,8 +1,8 @@
 """Local, bounded WAV output checks. No network calls or project writes."""
 
 import math
-from pathlib import Path
 import struct
+from pathlib import Path
 
 
 def inspect_wav(path, max_frames=5_000_000, expected_duration=None):

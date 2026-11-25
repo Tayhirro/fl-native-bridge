@@ -28,17 +28,17 @@ from fl_studio_mcp.tools import (
     register_plugin_tools,
     register_transport_tools,
 )
-from fl_studio_mcp.tools.native_tools import register_native_tools
-from fl_studio_mcp.tools.desktop import register_desktop_tools
-from fl_studio_mcp.tools.plugin_state import register_plugin_state_tools
-from fl_studio_mcp.tools.plugin_editor import register_plugin_editor_tools
 from fl_studio_mcp.tools.clip_time import register_clip_time_tools
+from fl_studio_mcp.tools.desktop import register_desktop_tools
+from fl_studio_mcp.tools.native_tools import register_native_tools
+from fl_studio_mcp.tools.plugin_editor import register_plugin_editor_tools
+from fl_studio_mcp.tools.plugin_state import register_plugin_state_tools
 from fl_studio_mcp.tools.semantic_native import register_semantic_native_tools
 from fl_studio_mcp.utils.connection import get_connection, reset_connection
 
 # Create the MCP server
 mcp = FastMCP(
-    name="fl-studio-mcp",
+    name="fl-native-bridge",
     instructions="""
 FL Studio MCP Server - Control FL Studio from AI assistants.
 

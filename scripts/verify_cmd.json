@@ -1,7 +1,0 @@
-{"commands": [
-  {"action": "mixer.setRouteTo", "params": {"source": 27, "dest": 0, "mode": "add"}},
-  {"action": "mixer.setRouteTo", "params": {"source": 28, "dest": 0, "mode": "add"}},
-  {"action": "mixer.setRouteTo", "params": {"source": 29, "dest": 0, "mode": "add"}},
-  {"action": "mixer.setRouteTo", "params": {"source": 30, "dest": 0, "mode": "add"}},
-  {"action": "mixer.setRouteTo", "params": {"source": 31, "dest": 0, "mode": "add"}}
-]}

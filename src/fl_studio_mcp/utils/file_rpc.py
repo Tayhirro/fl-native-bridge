@@ -29,21 +29,36 @@ class FileRPC:
             or any(c not in "abcdefghijklmnopqrstuvwxyz0123456789-_." for c in name)
         ):
             raise ValueError("Invalid lock name")
-        with (self.root / name).open("a+b") as handle:
+        # Several clients can create the lock file at the same moment; on Windows
+        # the loser of that race gets a sharing violation from open() itself, so
+        # the open is retried before any locking is attempted.
+        deadline = time.monotonic() + 5
+        while True:
+            try:
+                handle = (self.root / name).open("a+b")
+                break
+            except PermissionError:
+                if time.monotonic() >= deadline:
+                    raise TimeoutError("Queue index could not be opened")
+                time.sleep(0.01)
+        with handle:
             if os.name == "nt":
                 import msvcrt
 
-                if handle.tell() == 0:
-                    handle.write(b"\0")
-                    handle.flush()
-                handle.seek(0)
-                deadline = time.monotonic() + 5
+                # Seeding the first byte and taking the lock are both contended:
+                # a client that loses the race gets a sharing violation from the
+                # write, not from the lock, so both live inside one retry loop.
+                lock_deadline = time.monotonic() + 5
                 while True:
                     try:
+                        if os.fstat(handle.fileno()).st_size == 0:
+                            handle.write(b"\0")
+                            handle.flush()
+                        handle.seek(0)
                         msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
                         break
                     except OSError:
-                        if time.monotonic() >= deadline:
+                        if time.monotonic() >= lock_deadline:
                             raise TimeoutError("Queue index is locked by another client")
                         time.sleep(0.01)
                 try:

@@ -1,8 +1,0 @@
-{"commands": [
-  {"action": "mixer.muteTrack", "params": {"track": 27, "muted": false}},
-  {"action": "mixer.setTrackName", "params": {"track": 27, "name": "鼓·骨架"}},
-  {"action": "mixer.setTrackName", "params": {"track": 28, "name": "鼓·打击乐"}},
-  {"action": "mixer.setTrackName", "params": {"track": 29, "name": "贝斯总线"}},
-  {"action": "mixer.setTrackName", "params": {"track": 30, "name": "旋律总线"}},
-  {"action": "mixer.setTrackName", "params": {"track": 31, "name": "人声总线"}}
-]}

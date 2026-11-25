@@ -96,8 +96,10 @@ def read_bpm_from_flp(flp_path: str | Path) -> float:
 
 def read_bpm_via_gui() -> float:
     try:
-        from pynput.keyboard import Controller as KbCtrl, Key
-        from pynput.mouse import Controller as MsCtrl, Button
+        from pynput.keyboard import Controller as KbCtrl
+        from pynput.keyboard import Key
+        from pynput.mouse import Button
+        from pynput.mouse import Controller as MsCtrl
     except ImportError:
         raise RuntimeError("pynput not installed")
     left, top, right, bottom = _find_fl_window()
@@ -163,7 +165,7 @@ def trigger_export_via_gui(output_path: str, timeout: float = 60.0) -> Path:
             capture_output=True,
             text=True,
             timeout=timeout + 30,
-            cwd=r"C:\Users\Tayhirro\fl-studio-mcp",
+            cwd=os.path.dirname(script_path),
         )
         if result.returncode != 0 and "EXPORT_DONE" not in (result.stdout or ""):
             raise RuntimeError(f"Export failed (code {result.returncode}): {result.stderr or result.stdout}")

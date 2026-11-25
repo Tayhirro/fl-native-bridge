@@ -1,9 +1,9 @@
 """Isolated OLE worker. Never starts, stops or saves FL Studio."""
 
-import json
-import sys
 import ctypes
+import json
 import os
+import sys
 import time
 
 # OLE creates its tracking HWND during OleInitialize. It must inherit physical

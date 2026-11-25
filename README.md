@@ -99,7 +99,7 @@ reports success.
 
 ## Tool surface
 
-Roughly 125 MCP tools across transport, mixer, channels, patterns, piano roll,
+173 MCP tools across transport, mixer, channels, patterns, piano roll,
 playlist, arrangements, plugins and project save-copy. The native layer exposes 35
 operations:
 

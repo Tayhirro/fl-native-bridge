@@ -9,11 +9,11 @@ from __future__ import annotations
 import contextlib
 import ctypes
 import os
-from pathlib import Path
 import struct
 import threading
 import time
 import zlib
+from pathlib import Path
 
 from fl_studio_mcp.utils.file_rpc import FileRPC
 
@@ -29,8 +29,9 @@ def _win():
 
 def executable_path(pid: int) -> Path:
     _win()
-    import win32api
     from ctypes import wintypes
+
+    import win32api
 
     query = ctypes.windll.kernel32.QueryFullProcessImageNameW
     query.argtypes = [
@@ -226,7 +227,7 @@ def _point(gui, process, pid, x, y):
 
 
 def _unicode_text_events(text):
-    from pynput._util.win32 import INPUT, INPUT_union, KEYBDINPUT
+    from pynput._util.win32 import INPUT, KEYBDINPUT, INPUT_union
 
     encoded = text.encode("utf-16-le")
     events = []
@@ -276,8 +277,10 @@ def input_action(hwnd: int, operation: str, **params) -> dict:
         raise ValueError("Target form is hidden; refresh native/UI state before sending input")
     if process.GetWindowThreadProcessId(gui.GetForegroundWindow())[1] != pid:
         focus(hwnd)
-    from pynput.keyboard import Controller as Keyboard, Key
-    from pynput.mouse import Button, Controller as Mouse
+    from pynput.keyboard import Controller as Keyboard
+    from pynput.keyboard import Key
+    from pynput.mouse import Button
+    from pynput.mouse import Controller as Mouse
 
     with physical_pixels():
         if operation == "keys":
@@ -544,8 +547,8 @@ def _drop_file_in_process(
     trace("file_validated")
     import pythoncom
     import winerror
-    from win32com.shell import shell, shellcon
     from win32com.server.util import wrap
+    from win32com.shell import shell, shellcon
 
     class DropSource:
         _com_interfaces_ = [pythoncom.IID_IDropSource]

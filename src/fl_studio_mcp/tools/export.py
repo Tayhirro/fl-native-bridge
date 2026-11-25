@@ -13,8 +13,8 @@ def register_export_tools(mcp: FastMCP) -> None:
     from fl_studio_mcp.utils.audio import (
         bars_to_seconds,
         call_multimodal_api,
-        read_bpm_via_gui,
         read_bpm_from_flp,
+        read_bpm_via_gui,
         slice_wav_single,
         trigger_export_via_gui,
         wav_to_base64,

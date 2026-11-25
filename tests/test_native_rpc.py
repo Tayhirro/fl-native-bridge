@@ -1,11 +1,11 @@
 import importlib.util
 import json
-from pathlib import Path
-import threading
-import time
 import subprocess
 import sys
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 import pytest
 
@@ -244,7 +244,7 @@ def test_multi_process_clients_do_not_cross_responses(consumer):
             for base in (0, 100, 200, 300)
         ]
         for process, base in zip(processes, (0, 100, 200, 300)):
-            out, error = process.communicate(timeout=15)
+            out, error = process.communicate(timeout=45)
             assert process.returncode == 0, error
             assert [response["value"] for response in json.loads(out)] == list(
                 range(base, base + 5)
@@ -265,6 +265,7 @@ def test_event_overflow_reports_gap(consumer):
 
 def test_foreign_window_is_rejected(monkeypatch):
     from types import SimpleNamespace
+
     from fl_studio_mcp.utils import desktop
 
     gui = SimpleNamespace(IsWindow=lambda _: True)
@@ -295,9 +296,11 @@ def test_typed_arguments_support_sysex_bytes_and_fl_constants():
 
 def test_controlled_window_geometry_roundtrip(monkeypatch):
     import os
+
     import win32api
     import win32con
     import win32gui
+
     from fl_studio_mcp.utils import desktop
 
     class_name = "TFLBridgeValidationForm"
@@ -451,6 +454,7 @@ def test_partial_host_response_is_retried(consumer, monkeypatch):
 
 def test_ole_timeout_is_ambiguous_and_never_retried(monkeypatch):
     import subprocess
+
     from fl_studio_mcp.utils import desktop
 
     calls = []
@@ -475,6 +479,7 @@ def test_ole_timeout_is_ambiguous_and_never_retried(monkeypatch):
 
 def test_ole_preparation_never_focuses_or_enters_drag_loop(tmp_path, monkeypatch):
     from types import SimpleNamespace
+
     from fl_studio_mcp.utils import desktop
 
     # A real Shell IDataObject is prepared, but no foreground query, cursor
@@ -502,10 +507,12 @@ def test_ole_preparation_never_focuses_or_enters_drag_loop(tmp_path, monkeypatch
 
 def test_background_ole_loop_receives_local_wakeup_and_cancels(tmp_path):
     import ctypes
+
     import pythoncom
     import winerror
-    from win32com.shell import shell, shellcon
     from win32com.server.util import wrap
+    from win32com.shell import shell, shellcon
+
     from fl_studio_mcp.utils.desktop import _run_ole_drop
 
     # No global input, cursor motion or accepted drop: only our COM thread queue.

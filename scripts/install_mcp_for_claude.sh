@@ -2,7 +2,7 @@
 # Configure Claude Desktop/Code to use the FL Studio MCP server
 #
 # This script adds the FL Studio MCP server configuration to Claude's
-# config file, enabling AI control of FL Studio via MIDI.
+# config file, enabling AI control of FL Studio through the native bridge.
 
 set -e
 
@@ -18,7 +18,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 echo ""
-echo -e "${BLUE}FL Studio MCP - Claude Configuration${NC}"
+echo -e "${BLUE}fl-native-bridge - Claude Configuration${NC}"
 echo "======================================"
 echo ""
 echo -e "Project directory: ${CYAN}$PROJECT_DIR${NC}"
@@ -110,7 +110,7 @@ if 'mcpServers' not in config:
 # Add fl-studio entry
 config['mcpServers']['fl-studio'] = {
     "command": "uv",
-    "args": ["run", "--directory", project_dir, "fl-studio-mcp"]
+    "args": ["run", "--directory", project_dir, "fl-native-bridge"]
 }
 
 # Write back with pretty formatting
@@ -169,9 +169,9 @@ case $choice in
         echo ""
         echo '{'
         echo '  "mcpServers": {'
-        echo '    "fl-studio": {'
+        echo '    "fl-native-bridge": {'
         echo '      "command": "uv",'
-        echo "      \"args\": [\"run\", \"--directory\", \"$PROJECT_DIR\", \"fl-studio-mcp\"]"
+        echo "      \"args\": [\"run\", \"--directory\", \"$PROJECT_DIR\", \"fl-native-bridge\"]"
         echo '    }'
         echo '  }'
         echo '}'

@@ -4,6 +4,7 @@
 def register_native_tools(mcp):
     import math
     import time
+
     from fl_studio_mcp.utils.connection import get_connection
 
     def send(action, params=None):
@@ -48,7 +49,7 @@ def register_native_tools(mcp):
     @mcp.tool()
     def fl_bridge_status() -> dict:
         """Distinguish installed bridge code from live controller activation; list process-bound endpoints."""
-        from fl_studio_mcp.utils.file_rpc import FileRPC, EXPECTED_CONTROLLER_BUILD
+        from fl_studio_mcp.utils.file_rpc import EXPECTED_CONTROLLER_BUILD, FileRPC
 
         rpc = FileRPC()
         heartbeat = rpc.heartbeat()

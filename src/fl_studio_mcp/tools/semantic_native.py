@@ -953,7 +953,6 @@ def fl_clone_mixer_effect_full(
     afterwards. FL must be stopped. The target slot must be empty. This creates a
     new plugin instance; FL's undo support for a preset load is not assumed.
     """
-    import base64
     import hashlib
     import tempfile
 
@@ -2179,7 +2178,6 @@ def fl_save_project_copy(output_path: str) -> dict:
     The project itself is not modified. FL must be stopped.
     """
     import time
-
     from pathlib import Path as _P
 
     if (not isinstance(output_path, str) or not _P(output_path).is_absolute()
