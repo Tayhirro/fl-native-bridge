@@ -45,3 +45,16 @@ downgrade-only `test_override` hook). Controller active on PID 59432.
 Note: `general.undo` after adding an arrangement undid a different edit first,
 so the Undo check was repeated on a controllable automation value to verify
 restoration unambiguously.
+
+### Thread-diagnosis scope
+
+Task-book item 40 asks for a three-way comparison of the OnIdle thread ID,
+the engine's recorded main-thread ID and the same-process main-window thread
+ID. Only the main-window thread ID was directly observed (GUI tid 63660,
+process 59432) together with the RPC heartbeat in the same process. The
+controller does not publish an OnIdle thread ID and the engine's internal
+main-thread record is not exposed by the advertised native API, so those two
+values were **not** observed. No thread error or re-entry symptom appeared in
+any live run, and task book says to add scheduling changes only when such a
+symptom is observed, so none were made. The offline re-entry tests cover the
+dispatch gate instead.
