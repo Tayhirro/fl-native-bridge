@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/icon-anim.gif" width="88" alt="fl-native-bridge icon"></p>
+<p align="center"><img src="docs/icon-loop.gif" width="88" alt="fl-native-bridge icon"></p>
 
 # fl-native-bridge
 
