@@ -15,6 +15,7 @@ PyObject *initialize_engine(PyObject *self, PyObject *unused);
 const char *fl_dependency_gate(const char *operation, const unsigned char *engine);
 PyObject *fl_describe_dependencies(void);
 int fl_operation_is_write(const char *operation);
+int fl_test_override(const char *operation, const char *field, const char *state);
 PyObject *mixer_insert_empty_slot(PyObject *self, PyObject *args);
 PyObject *channel_add_sampler(PyObject *self, PyObject *args);
 PyObject *channel_add_generator(PyObject *self, PyObject *args);

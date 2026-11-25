@@ -168,10 +168,21 @@ static PyObject *execute(PyObject *self, PyObject *args) {
     return NULL;
 }
 
+static PyObject *test_override(PyObject *self, PyObject *args) {
+    (void)self;
+    const char *operation, *field, *state = NULL;
+    if (!PyArg_ParseTuple(args, "ss|z:test_override", &operation, &field, &state)) {
+        return NULL;
+    }
+    return PyLong_FromLong(fl_test_override(operation, field, state));
+}
+
 static PyMethodDef methods[] = {
     {"initialize", initialize_engine, METH_NOARGS, "Validate the running FL engine."},
     {"describe", describe, METH_NOARGS, "Describe compiled native operations."},
     {"execute", execute, METH_VARARGS, "Execute a named native operation."},
+    {"test_override", test_override, METH_VARARGS,
+     "Test-only: downgrade one evidence field; cannot raise the gate."},
     {NULL, NULL, 0, NULL},
 };
 

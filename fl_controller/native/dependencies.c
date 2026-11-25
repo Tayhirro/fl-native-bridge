@@ -36,7 +36,10 @@ typedef struct {
 /* Only the operations with explicit cross-checks are listed here. Other
  * operations remain covered by the exact-build gate and their in-handler
  * checks; describe() reports them as build-gated without claiming more. */
-static const OperationDependency dependencies[] = {
+/* Mutable copies backing the gate and describe(). A test override may only
+ * DOWNGRADE a field to "unsupported"; it can never raise evidence level, so
+ * exposing the hook does not create a path around the gate. */
+static OperationDependency dependencies[] = {
     {"mixer.insert_empty_slot", 0, TEXT_START, TEXT_END,
      "build-gated", "build-gated", "verified", 1},
     {"mixer.remove_effect", 0, TEXT_START, TEXT_END,
@@ -44,6 +47,10 @@ static const OperationDependency dependencies[] = {
     {"project.save_copy", PROJECT_SAVE_WORKER, TEXT_START, TEXT_END,
      "build-gated", "build-gated", "verified", 1},
 };
+
+/* Non-NULL only when a test explicitly installs a fake engine. Never set by
+ * production code; the real engine pointer from ModuleState always wins. */
+static const unsigned char *test_engine = NULL;
 
 static int state_rank(const char *state) {
     if (!strcmp(state, "verified")) {
@@ -63,6 +70,60 @@ static const OperationDependency *find_dependency(const char *operation) {
         }
     }
     return NULL;
+}
+
+/* Test-only hook: force one evidence field to "unsupported", or restore the
+ * compiled value with state=NULL. It can only DOWNGRADE evidence, so it cannot
+ * be used to bypass the gate. Fields: global_addresses, object_layout,
+ * calling_convention, rva. Returns 1 when applied, 0 for unknown names. */
+int fl_test_override(const char *operation, const char *field, const char *state) {
+    if (!operation || !field) {
+        return 0;
+    }
+    OperationDependency *dependency = NULL;
+    size_t index;
+    for (index = 0; index < sizeof(dependencies) / sizeof(dependencies[0]); ++index) {
+        if (!strcmp(dependencies[index].operation, operation)) {
+            dependency = &dependencies[index];
+            break;
+        }
+    }
+    if (!dependency) {
+        return 0;
+    }
+    int downgrade = state && !strcmp(state, "unsupported");
+    /* Test-only fake engine: a non-NULL sentinel so the gate can be exercised
+     * without FL. Image reads are bypassed by overriding the RVA field. */
+    if (!strcmp(field, "engine")) {
+        if (state && !strcmp(state, "unsupported")) {
+            *(void **)&test_engine = NULL;
+        } else {
+            test_engine = (const unsigned char *)(uintptr_t)0x1000;
+        }
+        return 1;
+    }
+    if (!strcmp(field, "rva")) {
+        dependency->entry_rva = downgrade
+            ? dependency->entry_high
+            : (dependency->operation[0] == 'p' ? PROJECT_SAVE_WORKER : 0);
+        return 1;
+    }
+    const char **target = NULL;
+    const char *restored = NULL;
+    if (!strcmp(field, "global_addresses")) {
+        target = &dependency->globals_state;
+        restored = "build-gated";
+    } else if (!strcmp(field, "object_layout")) {
+        target = &dependency->layout_state;
+        restored = "build-gated";
+    } else if (!strcmp(field, "calling_convention")) {
+        target = &dependency->callconv_state;
+        restored = "verified";
+    } else {
+        return 0;
+    }
+    *target = downgrade ? "unsupported" : restored;
+    return 1;
 }
 
 static int image_readable(const unsigned char *engine, uint32_t rva) {
@@ -85,6 +146,9 @@ const char *fl_dependency_gate(const char *operation, const unsigned char *engin
         return NULL; /* no declared dependency; existing build gate still applies */
     }
     if (!engine) {
+        engine = test_engine;
+    }
+    if (!engine) {
         return "Engine is not initialized";
     }
     if (state_rank(dependency->callconv_state) < 2) {
@@ -99,7 +163,7 @@ const char *fl_dependency_gate(const char *operation, const unsigned char *engin
                 dependency->entry_rva >= dependency->entry_high) {
             return "Function RVA is outside the verified text range";
         }
-        if (!image_readable(engine, dependency->entry_rva)) {
+        if (engine != test_engine && !image_readable(engine, dependency->entry_rva)) {
             return "Function bytes failed the image self-check";
         }
     }
