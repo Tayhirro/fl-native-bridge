@@ -191,6 +191,15 @@ class FileRPC:
         return {"state": "unknown", "request_id": request_id}
 
     def send(self, action: str, params: dict[str, Any] | None = None, timeout: float = 10) -> dict:
+        """Publish one request and wait for its response.
+
+        The response always carries ``queue_request_id``: the envelope ID used
+        by ``fl_get_request_status``. Callers pass their own ``request_id`` in
+        params for correlation; the two IDs are deliberately separate because
+        only the envelope ID names a file in the pending/inflight/responses
+        directories. Compound edits report both so an ambiguous write can be
+        resolved instead of guessed.
+        """
         if (
             not isinstance(action, str)
             or not action
@@ -232,17 +241,26 @@ class FileRPC:
                 time.sleep(0.02)
                 continue
             if status["state"] == "completed":
-                return status["response"]
+                response = status["response"]
+                # Preserve every controller field; add only the queue identity
+                # the tool layer cannot derive from its correlation ID.
+                if isinstance(response, dict):
+                    return {**response, "queue_request_id": request_id}
+                return response
             time.sleep(0.02)
         try:
             status = self.status(request_id)
         except (OSError, ValueError):
             status = {"state": "outcome_unknown"}
         if status["state"] == "completed":
-            return status["response"]
+            response = status["response"]
+            if isinstance(response, dict):
+                return {**response, "queue_request_id": request_id}
+            return response
         return {
             "success": False,
             "request_id": request_id,
+            "queue_request_id": request_id,
             "state": status["state"],
             "error": "Timed out; query this request ID before retrying any mutation",
             "error_type": "OutcomeUnknown",

@@ -512,7 +512,16 @@ def _effect_preset(name: str, engine_path: str, preset_path: str | None) -> Path
 
 def load_effect_at_slot(
     conn, name: str, track: int, slot: int, dry_run: bool, preset_path: str | None = None,
+    context: str | None = None, engine_path: str | None = None,
 ) -> dict:
+    """Load a preset into an exact slot.
+
+    A compound caller can pin ``context`` and ``engine_path`` captured before
+    its first write; when given, they are re-checked against the live loader
+    instead of silently replaced by a fresh context mid-transaction.
+    ``preset_path`` may be a prepared synthetic FST, so callers can stage every
+    file before the first mutation.
+    """
     target = {"track": track, "slot": slot}
     if type(track) is not int or track < 0 or type(slot) is not int or not 0 <= slot < 10:
         return {**target, "success": False, "submitted": False, "error": "Invalid track or slot"}
@@ -523,15 +532,23 @@ def load_effect_at_slot(
         host = conn.send_command("mixer.effectLoaderInfo", {}, timeout=5.0)
     except RuntimeError as exc:
         return {**target, "success": False, "submitted": False, "error": str(exc)}
-    context = host.get("context")
-    engine_path = host.get("engine_path")
-    if not host.get("success") or not isinstance(context, str) or not isinstance(engine_path, str):
+    live_context = host.get("context")
+    live_engine = host.get("engine_path")
+    if not host.get("success") or not isinstance(live_context, str) or not isinstance(live_engine, str):
         return {
             **target, "success": False, "submitted": False,
             "error": host.get("error") or "The local effect loader is unavailable",
         }
+    if context is not None and live_context != context:
+        return {**target, "success": False, "submitted": False,
+                "error": "The FL controller or current project changed before insertion",
+                "context": live_context, "expected_context": context}
+    if engine_path is not None and live_engine != engine_path:
+        return {**target, "success": False, "submitted": False,
+                "error": "The FL engine changed before insertion",
+                "engine_path": live_engine, "expected_engine_path": engine_path}
     try:
-        preset = _effect_preset(name, engine_path, preset_path)
+        preset = _effect_preset(name, live_engine, preset_path)
     except (OSError, ValueError) as exc:
         return {**target, "success": False, "submitted": False, "error": str(exc)}
     request_id = uuid4().hex
@@ -576,6 +593,92 @@ def load_effect_at_slot(
         **({"error": result.get("error") or "The requested effect was not confirmed in this slot"}
            if not verified or not result.get("success") else {}),
     }
+
+def _step_outcome(response: dict) -> str:
+    """Classify one RPC response without guessing at an ambiguous write."""
+    if (response.get("error_type") == "OutcomeUnknown"
+            or response.get("state") in ("outcome_unknown", "queued")):
+        return "outcome_unknown"
+    if not response.get("success"):
+        return "rejected_before_write" if not response.get("submitted") else "known_failure"
+    if response.get("submitted") and response.get("verified") is False:
+        return "partial"
+    return "completed"
+
+
+def _step_record(name: str, correlation_id: str, response: dict,
+                 slot_state: dict | None = None) -> dict:
+    """Keep the tool correlation ID and the queue envelope ID separate.
+
+    ``correlation_id`` is the ID this tool put into params and expects echoed
+    back (``effect_request_id``/``native_request_id``/``capability_request_id``).
+    ``queue_request_id`` is the envelope ID ``FileRPC.send`` created; only that
+    ID can be passed to ``fl_get_request_status``. Mixing them is how a timed
+    out mutation becomes untraceable.
+    """
+    record = {
+        "step": name,
+        "correlation_id": correlation_id,
+        "queue_request_id": response.get("queue_request_id"),
+        "submitted": bool(response.get("submitted")),
+        "outcome": _step_outcome(response),
+    }
+    if slot_state is not None:
+        record["slot_state"] = slot_state
+    if response.get("error"):
+        record["error"] = response["error"]
+    return record
+
+
+def _status_request_ids(steps: list[dict]) -> list[str]:
+    return [step["queue_request_id"] for step in steps
+            if isinstance(step.get("queue_request_id"), str)]
+
+
+def _queue_status(request_id: str) -> dict:
+    """Resolve a queue envelope ID through the same store the MCP status tool uses."""
+    from fl_studio_mcp.utils.file_rpc import FileRPC
+
+    return FileRPC().status(request_id)
+
+
+def _terminal(steps: list[dict]) -> bool:
+    """True only when every submitted request has left the queue."""
+    for step in steps:
+        request_id = step.get("queue_request_id")
+        if not request_id or not step.get("submitted"):
+            continue
+        try:
+            state = _queue_status(request_id).get("state")
+        except (OSError, ValueError, TypeError):
+            return False
+        if state in ("queued", "outcome_unknown") or state is None:
+            return False
+    return True
+
+
+def _release_when_final(paths: list[Path], steps: list[dict]) -> list[str]:
+    """Delete temp artifacts once no submitted request can still read them."""
+    if _terminal(steps):
+        for path in paths:
+            try:
+                path.unlink(missing_ok=True)
+            except OSError:
+                pass
+        return []
+    return [str(path) for path in paths if path.exists()]
+
+
+def _pin(capabilities: dict) -> tuple[str, str] | None:
+    """Return (context, engine_path) only when the native bridge is usable."""
+    native = capabilities.get("native", {})
+    if (not capabilities.get("success") or not native.get("available")
+            or not isinstance(capabilities.get("context"), str)
+            or not isinstance(native.get("engine_path"), str)
+            or not native["engine_path"]):
+        return None
+    return capabilities["context"], native["engine_path"]
+
 
 def fl_list_capabilities() -> dict:
     """Read the current controller session and native bridge compatibility.
@@ -970,46 +1073,69 @@ def fl_clone_mixer_effect_full(
     if (source_track, source_slot) == (target_track, target_slot):
         return {"success": False, "error": "Source and target slot are the same"}
     capabilities = fl_list_capabilities()
-    native = capabilities.get("native", {})
-    if not capabilities.get("success") or not native.get("available"):
-        return {"success": False, "error": native.get("error") or "Native bridge unavailable"}
-    context = capabilities["context"]
-    engine_path = native.get("engine_path")
-    if not isinstance(engine_path, str) or not engine_path:
-        return {"success": False, "error": "The bridge did not report the engine path"}
-    # Plugin identity and an empty target.
+    pinned = _pin(capabilities)
+    if pinned is None:
+        native = capabilities.get("native", {})
+        return {"success": False, "error": native.get("error") or "Native bridge unavailable",
+                "steps": [], "status_request_ids": []}
+    context, engine_path = pinned
     import time
-    id_request = uuid4().hex
+    steps: list[dict] = []
+    saved = None
+    synth = None
+    after_copy = None
+
+    def finish(result: dict) -> dict:
+        """Attach correlation data and release artifacts when requests are final."""
+        result.setdefault("steps", steps)
+        result.setdefault("status_request_ids", _status_request_ids(steps))
+        retained = _release_when_final(
+            [p for p in (saved, after_copy, synth) if p is not None], steps)
+        if retained:
+            result["retained_artifacts"] = retained
+        return result
+
+    conn = get_connection()
     try:
-        plugin_name = get_connection().send_command("native.call", {
+        id_request = uuid4().hex
+        plugin_name = conn.send_command("native.call", {
             "request_id": id_request, "module": "plugins", "method": "getPluginName",
             "args": [source_track, source_slot, False, True],
         }, timeout=15.0)
     except RuntimeError as exc:
-        return {"success": False, "error": str(exc)}
+        return finish({"success": False, "error": str(exc)})
+    steps.append(_step_record("identify_source", id_request, plugin_name))
     if not plugin_name.get("success") or not isinstance(plugin_name.get("result"), str):
-        return {"success": False, "error": plugin_name.get("error") or "Source slot is empty"}
+        return finish({"success": False,
+                       "error": plugin_name.get("error") or "Source slot is empty"})
     name = plugin_name["result"]
-    target_busy = get_connection().send_command("native.call", {
-        "request_id": uuid4().hex, "module": "plugins", "method": "isValid",
-        "args": [target_track, target_slot, True],
-    }, timeout=15.0)
+    try:
+        busy_request = uuid4().hex
+        target_busy = conn.send_command("native.call", {
+            "request_id": busy_request, "module": "plugins", "method": "isValid",
+            "args": [target_track, target_slot, True],
+        }, timeout=15.0)
+    except RuntimeError as exc:
+        return finish({"success": False, "error": str(exc)})
+    steps.append(_step_record("check_target", busy_request, target_busy))
     if target_busy.get("success") and target_busy.get("result"):
-        return {"success": False, "error": "Target slot is occupied"}
-    saved = None
-    synth = None
+        return finish({"success": False, "error": "Target slot is occupied"})
+
     try:
         handle, temp_name = tempfile.mkstemp(prefix="flmcp-fxstate-", suffix=".flp")
         import os as _os
         _os.close(handle)
         saved = Path(temp_name)
         copy = fl_save_project_copy(str(saved))
-        if not copy.get("success"):
-            return {"success": False, "error": copy.get("error") or "Project save-copy failed"}
+        steps.append(_step_record("capture_state", copy.get("request_id", ""), copy))
+        if not copy.get("success") or copy.get("context") != context:
+            return finish({"success": False,
+                           "error": copy.get("error") or "Project or controller changed before capture"})
         parsed = parse_flp_plugin_states(saved.read_bytes())
         state = parsed["mixer_slots"].get((source_track, source_slot))
         if not state:
-            return {"success": False, "error": "The source slot stores no plugin state record"}
+            return finish({"success": False,
+                           "error": "The source slot stores no plugin state record"})
         skeleton_path = _effect_preset(name, engine_path, None)
         skeleton = skeleton_path.read_bytes()
         synthetic = _fst_with_plugin_state(skeleton, state)
@@ -1021,9 +1147,10 @@ def fl_clone_mixer_effect_full(
             "source": {"track": source_track, "slot": source_slot},
             "target": {"track": target_track, "slot": target_slot},
             "synthetic_bytes": len(synthetic),
+            "context": context,
         }
         if dry_run:
-            return plan
+            return finish(plan)
         out_dir = (Path.home() / "Documents/Image-Line/FL Studio/Presets"
                    / "Plugin database/Effects")
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -1035,63 +1162,85 @@ def fl_clone_mixer_effect_full(
                 return get_connection().send_command(action, params or {}, timeout=timeout)
 
         loaded = load_effect_at_slot(_Conn(), name, target_track, target_slot, False,
-                                     preset_path=str(synth))
+                                     preset_path=str(synth), context=context,
+                                     engine_path=engine_path)
+        steps.append(_step_record("load_state", loaded.get("effect_request_id", ""), loaded,
+                                  {"track": target_track, "slot": target_slot}))
+        if loaded.get("outcome") == "outcome_unknown" or loaded.get("write_outcome_unknown"):
+            # Never stage a compensating write until the original is resolved.
+            return finish({**plan, "success": False, "submitted": True,
+                           "state": "outcome_unknown",
+                           "error": loaded.get("error") or "Load result is unknown"})
         if not loaded.get("verified"):
-            return {**plan, "success": False, "submitted": True,
-                    "error": loaded.get("error") or "Synthetic preset did not load"}
+            return finish({**plan, "success": False, "submitted": bool(loaded.get("submitted")),
+                           "error": loaded.get("error") or "Synthetic preset did not load"})
         # Independent comparison of the target's full state record.
         time.sleep(0.2)
         after_copy = synth.with_suffix(".after.flp")
         copy2 = fl_save_project_copy(str(after_copy))
-        if not copy2.get("success"):
-            return {**plan, "success": False, "submitted": True,
-                    "error": copy2.get("error") or "Verification save-copy failed"}
+        steps.append(_step_record("verify_state", copy2.get("request_id", ""), copy2))
+        if not copy2.get("success") or copy2.get("context") != context:
+            return finish({**plan, "success": False, "submitted": True,
+                           "error": copy2.get("error") or "Verification save-copy failed"})
         parsed2 = parse_flp_plugin_states(after_copy.read_bytes())
         target_state = parsed2["mixer_slots"].get((target_track, target_slot))
-        after_copy.unlink(missing_ok=True)
         if not target_state:
-            return {**plan, "success": False, "submitted": True,
-                    "error": "Target slot stores no state record after load"}
+            return finish({**plan, "success": False, "submitted": True,
+                           "error": "Target slot stores no state record after load"})
         digest_match = hashlib.sha256(target_state).hexdigest() == plan["source_sha256"]
-        return {**plan, "submitted": True, "success": bool(digest_match),
-                "target_sha256": hashlib.sha256(target_state).hexdigest(),
-                "target_bytes": len(target_state),
-                "state_matched": digest_match,
-                "note": ("Complete event-213 state matched the source"
-                         if digest_match else
-                         "State digest differs; the plugin may normalise or re-serialise"),
-                "context": context}
+        return finish({**plan, "submitted": True, "success": bool(digest_match),
+                       "target_sha256": hashlib.sha256(target_state).hexdigest(),
+                       "target_bytes": len(target_state),
+                       "state_matched": digest_match,
+                       "note": ("Complete event-213 state matched the source"
+                                if digest_match else
+                                "State digest differs; the plugin may normalise or re-serialise")})
     except (OSError, ValueError, RuntimeError) as exc:
-        return {"success": False, "submitted": synth is not None, "error": str(exc)}
-    finally:
-        if saved is not None:
-            saved.unlink(missing_ok=True)
-        if synth is not None:
-            synth.unlink(missing_ok=True)
+        return finish({"success": False, "submitted": synth is not None, "error": str(exc)})
 
 def _load_state_into_slot(plugin: str, state: bytes, track: int, slot: int,
-                          engine_path: str) -> dict:
-    """Load a captured event-213 record into an empty Mixer slot."""
-    skeleton_path = _effect_preset(plugin, engine_path, None)
-    synthetic = _fst_with_plugin_state(skeleton_path.read_bytes(), state)
-    out_dir = (Path.home() / "Documents/Image-Line/FL Studio/Presets"
-               / "Plugin database/Effects")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    synth = out_dir / ("FLMCP-State-" + uuid4().hex[:10] + ".fst")
-    try:
+                          engine_path: str, context: str | None = None,
+                          synth_path: Path | None = None) -> dict:
+    """Load a captured event-213 record into an empty Mixer slot.
+
+    A caller that has already staged the synthetic FST passes ``synth_path``;
+    otherwise one is created here and removed after the request is final.
+    The pinned ``context`` is forwarded so a controller/project change is
+    refused before the write instead of being silently replaced.
+    """
+    if synth_path is None:
+        skeleton_path = _effect_preset(plugin, engine_path, None)
+        synthetic = _fst_with_plugin_state(skeleton_path.read_bytes(), state)
+        out_dir = (Path.home() / "Documents/Image-Line/FL Studio/Presets"
+                   / "Plugin database/Effects")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        synth = out_dir / ("FLMCP-State-" + uuid4().hex[:10] + ".fst")
         synth.write_bytes(synthetic)
+        owned = True
+    else:
+        synth = synth_path
+        owned = False
 
-        class _Conn:
-            def send_command(self, action, params=None, timeout=10):
-                return get_connection().send_command(action, params or {}, timeout=timeout)
+    class _Conn:
+        def send_command(self, action, params=None, timeout=10):
+            return get_connection().send_command(action, params or {}, timeout=timeout)
 
+    try:
         result = load_effect_at_slot(_Conn(), plugin, track, slot, False,
-                                     preset_path=str(synth))
+                                     preset_path=str(synth), context=context,
+                                     engine_path=engine_path)
         return {"success": bool(result.get("verified")),
+                "submitted": bool(result.get("submitted")),
+                "verified": bool(result.get("verified")),
+                "write_outcome_unknown": bool(result.get("write_outcome_unknown")
+                                              or result.get("outcome") == "outcome_unknown"),
+                "effect_request_id": result.get("effect_request_id"),
+                "queue_request_id": result.get("queue_request_id"),
                 "error": None if result.get("verified") else
                 (result.get("error") or "preset did not load")}
     finally:
-        synth.unlink(missing_ok=True)
+        if owned:
+            synth.unlink(missing_ok=True)
 
 def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = False) -> dict:
     """Swap two Mixer FX slots with their COMPLETE plugin state.
@@ -1112,100 +1261,173 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
             or type(dry_run) is not bool:
         return {"success": False, "error": "Invalid track/slots or dry_run"}
     capabilities = fl_list_capabilities()
-    native = capabilities.get("native", {})
-    if not capabilities.get("success") or not native.get("available"):
-        return {"success": False, "error": native.get("error") or "Native bridge unavailable"}
-    engine_path = native.get("engine_path")
-    context = capabilities["context"]
-    if not isinstance(engine_path, str) or not engine_path:
-        return {"success": False, "error": "The bridge did not report the engine path"}
-    def plugin_of(slot):
-        r = get_connection().send_command("native.call", {
-            "request_id": uuid4().hex, "module": "plugins", "method": "getPluginName",
+    pinned = _pin(capabilities)
+    if pinned is None:
+        native = capabilities.get("native", {})
+        return {"success": False, "error": native.get("error") or "Native bridge unavailable",
+                "irreversible": True, "steps": [], "status_request_ids": []}
+    context, engine_path = pinned
+    import tempfile
+    steps: list[dict] = []
+    saved = None
+    synths: list[Path] = []
+    verify_path = None
+    restore_path = None
+    conn = get_connection()
+
+    def finish(result: dict) -> dict:
+        result.setdefault("steps", steps)
+        result.setdefault("status_request_ids", _status_request_ids(steps))
+        result.setdefault("irreversible", True)
+        retained = _release_when_final(
+            [p for p in (saved, verify_path, restore_path, *synths) if p is not None], steps)
+        if retained:
+            result["retained_artifacts"] = retained
+        return result
+
+    def plugin_of(slot: int, label: str) -> str | None:
+        request_id = uuid4().hex
+        response = conn.send_command("native.call", {
+            "request_id": request_id, "module": "plugins", "method": "getPluginName",
             "args": [track, slot, False, True],
         }, timeout=15.0)
-        return r.get("result") if r.get("success") else None
-    names = {slot_a: plugin_of(slot_a), slot_b: plugin_of(slot_b)}
-    missing = [s for s, n in names.items() if not isinstance(n, str) or not n]
-    if missing:
-        return {"success": False, "error": "Slot(s) %s are empty" % missing}
-    import tempfile
-    saved = None
+        steps.append(_step_record(label, request_id, response,
+                                  {"track": track, "slot": slot}))
+        return response.get("result") if response.get("success") else None
+
+    def current_state(path: Path, label: str) -> dict | None:
+        copy = fl_save_project_copy(str(path))
+        steps.append(_step_record(label, copy.get("request_id", ""), copy))
+        if not copy.get("success") or copy.get("context") != context:
+            return None
+        return parse_flp_plugin_states(path.read_bytes())["mixer_slots"]
+
+    def digest(value: bytes | None) -> str | None:
+        return hashlib.sha256(value).hexdigest() if value else None
+
+    def remove(slot: int, label: str) -> dict:
+        request_id = uuid4().hex
+        response = conn.send_command("native.removeMixerEffect", {
+            "request_id": request_id, "context": context, "track": track,
+            "slot": slot, "dry_run": False,
+        }, timeout=40.0)
+        steps.append(_step_record(label, request_id, response,
+                                  {"track": track, "slot": slot}))
+        return response
+
+    def load(plugin: str, state: bytes, slot: int, label: str) -> dict:
+        request_id = uuid4().hex
+        skeleton = _effect_preset(plugin, engine_path, None)
+        synthetic = _fst_with_plugin_state(skeleton.read_bytes(), state)
+        out_dir = (Path.home() / "Documents/Image-Line/FL Studio/Presets"
+                   / "Plugin database/Effects")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        synth = out_dir / ("FLMCP-Swap-" + request_id[:10] + ".fst")
+        synth.write_bytes(synthetic)
+        synths.append(synth)
+        result = _load_state_into_slot(plugin, state, track, slot, engine_path,
+                                       context=context, synth_path=synth)
+        steps.append(_step_record(label, result.get("effect_request_id") or request_id,
+                                  {"success": result["success"],
+                                   "submitted": result["submitted"],
+                                   "queue_request_id": result.get("queue_request_id"),
+                                   "error": result.get("error"),
+                                   **({"error_type": "OutcomeUnknown"}
+                                      if result.get("write_outcome_unknown") else {})},
+                                  {"track": track, "slot": slot}))
+        return result
+
     try:
+        names = {slot_a: plugin_of(slot_a, "identify_a"),
+                 slot_b: plugin_of(slot_b, "identify_b")}
+        missing = [s for s, name in names.items() if not isinstance(name, str) or not name]
+        if missing:
+            return finish({"success": False, "error": "Slot(s) %s are empty" % missing})
+
         handle, temp_name = tempfile.mkstemp(prefix="flmcp-swap-", suffix=".flp")
         import os as _os
         _os.close(handle)
         saved = Path(temp_name)
-        copy = fl_save_project_copy(str(saved))
-        if not copy.get("success"):
-            return {"success": False, "error": copy.get("error") or "Save-copy failed"}
-        slots = parse_flp_plugin_states(saved.read_bytes())["mixer_slots"]
+        slots = current_state(saved, "capture_state")
+        if slots is None:
+            return finish({"success": False, "error": "Save-copy failed or context changed"})
         states = {slot_a: slots.get((track, slot_a)), slot_b: slots.get((track, slot_b))}
         if not states[slot_a] or not states[slot_b]:
-            return {"success": False, "error": "A slot stores no state record"}
-        plan = {"success": True, "submitted": False, "dry_run": dry_run,
-                "track": track, "slot_a": slot_a, "slot_b": slot_b,
-                "a": {"plugin": names[slot_a], "bytes": len(states[slot_a]),
-                      "sha256": hashlib.sha256(states[slot_a]).hexdigest()},
-                "b": {"plugin": names[slot_b], "bytes": len(states[slot_b]),
-                      "sha256": hashlib.sha256(states[slot_b]).hexdigest()},
-                "irreversible": True,
-                "warning": ("Removal has no restorable FL undo; "
-                            "a failure is recovered from the captured records.")}
+            return finish({"success": False, "error": "A slot stores no state record"})
+        plan = {
+            "success": True, "submitted": False, "dry_run": dry_run,
+            "track": track, "slot_a": slot_a, "slot_b": slot_b,
+            "context": context,
+            "a": {"plugin": names[slot_a], "bytes": len(states[slot_a]),
+                  "sha256": digest(states[slot_a])},
+            "b": {"plugin": names[slot_b], "bytes": len(states[slot_b]),
+                  "sha256": digest(states[slot_b])},
+            "warning": ("Removal has no restorable FL undo; "
+                        "a failure is recovered from the captured records."),
+        }
         if dry_run:
-            return plan
-        def remove(slot):
-            return get_connection().send_command("native.removeMixerEffect", {
-                "request_id": uuid4().hex, "context": context, "track": track,
-                "slot": slot, "dry_run": False,
-            }, timeout=40.0)
-        # A <- B's state, B <- A's state.
-        steps = []
-        r1 = remove(slot_a)
-        steps.append({"step": "remove_a", "success": bool(r1.get("success"))})
+            return finish(plan)
+
+        # Stage both synthetic presets before the first destructive call.
+        for slot, source in ((slot_a, slot_b), (slot_b, slot_a)):
+            skeleton = _effect_preset(names[source], engine_path, None)
+            synthetic = _fst_with_plugin_state(skeleton.read_bytes(), states[source])
+            out_dir = (Path.home() / "Documents/Image-Line/FL Studio/Presets"
+                       / "Plugin database/Effects")
+            out_dir.mkdir(parents=True, exist_ok=True)
+            synth = out_dir / ("FLMCP-SwapStage-" + uuid4().hex[:10] + ".fst")
+            synth.write_bytes(synthetic)
+            synths.append(synth)
+
+        # A <- B's state, B <- A's state. Stop on the first unknown result.
+        r1 = remove(slot_a, "remove_a")
+        if _step_outcome(r1) == "outcome_unknown":
+            return finish({**plan, "success": False, "submitted": True,
+                           "state": "outcome_unknown", "error": "remove A result is unknown"})
         if not r1.get("success"):
-            return {**plan, "success": False, "submitted": False, "steps": steps,
-                    "error": r1.get("error") or "remove A failed"}
-        l1 = _load_state_into_slot(names[slot_b], states[slot_b], track, slot_a, engine_path)
-        steps.append({"step": "load_b_into_a", "success": l1["success"], "error": l1.get("error")})
+            return finish({**plan, "success": False,
+                           "error": r1.get("error") or "remove A failed"})
+        l1 = load(names[slot_b], states[slot_b], slot_a, "load_b_into_a")
+        if l1.get("write_outcome_unknown"):
+            return finish({**plan, "success": False, "submitted": True,
+                           "state": "outcome_unknown", "error": "load B into A is unknown"})
         if not l1["success"]:
-            _load_state_into_slot(names[slot_a], states[slot_a], track, slot_a, engine_path)
-            return {**plan, "success": False, "submitted": True, "steps": steps,
-                    "error": l1.get("error") or "load B into A failed; A restored"}
-        r2 = remove(slot_b)
-        steps.append({"step": "remove_b", "success": bool(r2.get("success"))})
+            return finish({**plan, "success": False, "submitted": True,
+                           "error": l1.get("error") or "load B into A failed"})
+        r2 = remove(slot_b, "remove_b")
+        if _step_outcome(r2) == "outcome_unknown":
+            return finish({**plan, "success": False, "submitted": True,
+                           "state": "outcome_unknown", "error": "remove B result is unknown"})
         if not r2.get("success"):
-            return {**plan, "success": False, "submitted": True, "steps": steps,
-                    "error": r2.get("error") or "remove B failed; A now holds B"}
-        l2 = _load_state_into_slot(names[slot_a], states[slot_a], track, slot_b, engine_path)
-        steps.append({"step": "load_a_into_b", "success": l2["success"], "error": l2.get("error")})
+            return finish({**plan, "success": False, "submitted": True,
+                           "error": r2.get("error") or "remove B failed; A now holds B"})
+        l2 = load(names[slot_a], states[slot_a], slot_b, "load_a_into_b")
+        if l2.get("write_outcome_unknown"):
+            return finish({**plan, "success": False, "submitted": True,
+                           "state": "outcome_unknown", "error": "load A into B is unknown"})
         if not l2["success"]:
-            return {**plan, "success": False, "submitted": True, "steps": steps,
-                    "error": l2.get("error") or "load A into B failed; B empty, A holds B"}
+            return finish({**plan, "success": False, "submitted": True,
+                           "error": l2.get("error") or "load A into B failed; B empty"})
+
         time.sleep(0.2)
         verify_path = saved.with_suffix(".verify.flp")
-        vcopy = fl_save_project_copy(str(verify_path))
-        if not vcopy.get("success"):
-            return {**plan, "success": False, "submitted": True, "steps": steps,
-                    "error": vcopy.get("error") or "verification save-copy failed"}
-        after = parse_flp_plugin_states(verify_path.read_bytes())["mixer_slots"]
-        verify_path.unlink(missing_ok=True)
-        a_after = after.get((track, slot_a))
-        b_after = after.get((track, slot_b))
+        after = current_state(verify_path, "verify_state")
+        if after is None:
+            return finish({**plan, "success": False, "submitted": True,
+                           "error": "Verification save-copy failed or context changed"})
+        a_after, b_after = after.get((track, slot_a)), after.get((track, slot_b))
         matched = bool(a_after and b_after
-                       and hashlib.sha256(a_after).hexdigest() == plan["b"]["sha256"]
-                       and hashlib.sha256(b_after).hexdigest() == plan["a"]["sha256"])
-        return {**plan, "submitted": True, "success": matched, "steps": steps,
-                "state_matched": matched,
-                "a_after_sha256": hashlib.sha256(a_after).hexdigest() if a_after else None,
-                "b_after_sha256": hashlib.sha256(b_after).hexdigest() if b_after else None,
-                "note": ("Slots swapped with complete state" if matched
-                         else "Digests did not cross-match; inspect steps")}
+                       and digest(a_after) == plan["b"]["sha256"]
+                       and digest(b_after) == plan["a"]["sha256"])
+        return finish({**plan, "submitted": True, "success": matched,
+                       "state_matched": matched,
+                       "a_after_sha256": digest(a_after),
+                       "b_after_sha256": digest(b_after),
+                       "note": ("Slots swapped with complete state" if matched
+                                else "Digests did not cross-match; inspect steps")})
     except (OSError, ValueError, RuntimeError) as exc:
-        return {"success": False, "submitted": True, "error": str(exc)}
-    finally:
-        if saved is not None:
-            saved.unlink(missing_ok=True)
+        return finish({"success": False, "submitted": any(
+            step.get("submitted") for step in steps), "error": str(exc)})
 
 
 def fl_read_mixer_effect_state(track: int | None = None, slot: int | None = None) -> dict:
