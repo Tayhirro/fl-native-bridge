@@ -590,6 +590,10 @@ def load_effect_at_slot(
         **target, "submitted": True, "plugin_name": actual,
         "success": verified and bool(result.get("success")),
         "verified": verified,
+        # Both IDs must survive the wrapper: the correlation ID for the
+        # controller echo and the queue envelope ID for fl_get_request_status.
+        "effect_request_id": result.get("effect_request_id") or request_id,
+        "queue_request_id": result.get("queue_request_id"),
         **({"error": result.get("error") or "The requested effect was not confirmed in this slot"}
            if not verified or not result.get("success") else {}),
     }

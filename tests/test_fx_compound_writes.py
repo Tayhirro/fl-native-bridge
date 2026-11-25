@@ -248,6 +248,11 @@ def test_clone_only_succeeds_on_digest_match(harness):
     assert result["state_matched"] is True
     assert result["target_sha256"] == result["source_sha256"]
     assert any(step["step"] == "verify_state" for step in result["steps"])
+    # The load step must carry both IDs so fl_get_request_status can resolve it.
+    load = next(s for s in result["steps"] if s["step"] == "load_state")
+    assert load["correlation_id"]
+    assert load["queue_request_id"]
+    assert load["queue_request_id"] in result["status_request_ids"]
 
 
 def test_clone_preserves_submitted_on_readback_failure(harness):
