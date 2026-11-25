@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/icon.png" width="88" alt="fl-native-bridge icon"></p>
+
 # fl-native-bridge
 
 A native C extension that runs inside FL Studio's own Python process and calls the
