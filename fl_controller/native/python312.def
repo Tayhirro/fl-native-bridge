@@ -1,0 +1,22 @@
+LIBRARY python312.dll
+EXPORTS
+    PyModuleDef_Init
+    _Py_BuildValue_SizeT
+    PyModule_GetState
+    PyLong_FromUnsignedLong
+    PyLong_FromLong
+    PyLong_AsUnsignedLong
+    PyLong_AsLong
+    PyFloat_AsDouble
+    PyTuple_GetItem
+    PyBytes_FromStringAndSize
+    PyBytes_AsStringAndSize
+    PyUnicode_FromWideChar
+    PyErr_SetString
+    PyErr_Occurred
+    PyErr_NoMemory
+    _Py_Dealloc
+    PyExc_RuntimeError DATA
+    PyExc_ValueError DATA
+    _PyArg_ParseTuple_SizeT
+    PyErr_Format

@@ -1,0 +1,20 @@
+{"commands": [
+  {"action": "mixer.setRouteTo", "params": {"source": 1,  "dest": 27, "mode": "only"}},
+  {"action": "mixer.setRouteTo", "params": {"source": 2,  "dest": 27, "mode": "only"}},
+  {"action": "mixer.setRouteTo", "params": {"source": 4,  "dest": 27, "mode": "only"}},
+  {"action": "mixer.setRouteTo", "params": {"source": 20, "dest": 27, "mode": "only"}},
+  {"action": "mixer.setRouteTo", "params": {"source": 24, "dest": 27, "mode": "only"}},
+  {"action": "mixer.setRouteTo", "params": {"source": 25, "dest": 27, "mode": "only"}},
+  {"action": "mixer.setRouteTo", "params": {"source": 13, "dest": 28, "mode": "only"}},
+  {"action": "mixer.setRouteTo", "params": {"source": 14, "dest": 28, "mode": "only"}},
+  {"action": "mixer.setRouteTo", "params": {"source": 21, "dest": 28, "mode": "only"}},
+  {"action": "mixer.setRouteTo", "params": {"source": 23, "dest": 28, "mode": "only"}},
+  {"action": "mixer.setRouteTo", "params": {"source": 5,  "dest": 29, "mode": "only"}},
+  {"action": "mixer.setRouteTo", "params": {"source": 19, "dest": 29, "mode": "only"}},
+  {"action": "mixer.setRouteTo", "params": {"source": 26, "dest": 29, "mode": "only"}},
+  {"action": "mixer.setRouteTo", "params": {"source": 17, "dest": 30, "mode": "only"}},
+  {"action": "mixer.setRouteTo", "params": {"source": 18, "dest": 30, "mode": "only"}},
+  {"action": "mixer.setRouteTo", "params": {"source": 22, "dest": 30, "mode": "only"}},
+  {"action": "mixer.setRouteTo", "params": {"source": 8,  "dest": 31, "mode": "only"}},
+  {"action": "mixer.setRouteTo", "params": {"source": 12, "dest": 31, "mode": "only"}}
+]}

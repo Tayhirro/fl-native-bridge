@@ -1,0 +1,15 @@
+.venv/
+.claude/
+uv.lock
+fl_controller/__pycache__/
+# Local dev snapshots (kept outside the repo).
+backups/
+
+# Compiled extension: only the shipped build is tracked so a clone runs as-is.
+*.pyd
+!fl_controller/_flmcp_native.pyd
+src/fl_studio_mcp/__pycache__/
+src/fl_studio_mcp/tools/__pycache__
+src/fl_studio_mcp/utils/__pycache__
+__pycache__/
+*.pyc
