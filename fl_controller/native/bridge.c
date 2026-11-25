@@ -12,9 +12,13 @@
 #endif
 
 static PyObject *describe(PyObject *self, PyObject *unused) {
-    (void)self;
     (void)unused;
-    return Py_BuildValue("{s:i,s:s,s:[sssssssssssssssssssssssssssssssssss]}",
+    ModuleState *state = PyModule_GetState(self);
+    PyObject *dependencies = fl_describe_dependencies();
+    if (!dependencies) {
+        return NULL;
+    }
+    PyObject *result = Py_BuildValue("{s:i,s:s,s:[sssssssssssssssssssssssssssssssssss],s:O}",
                          "api_version", 1,
                          "engine_profile", "26.1.7.5654-x64",
                          "operations", "mixer.insert_empty_slot", "playlist.read_clips",
@@ -34,13 +38,25 @@ static PyObject *describe(PyObject *self, PyObject *unused) {
                          "arrangement.read_all", "arrangement.add",
                          "arrangement.clone", "arrangement.delete", "arrangement.set_current",
                          "arrangement.set_name", "project.save_copy",
-                         "mixer.remove_effect");
+                         "mixer.remove_effect",
+                         "dependencies", dependencies);
+    Py_DECREF(dependencies);
+    (void)state;
+    return result;
 }
 
 static PyObject *execute(PyObject *self, PyObject *args) {
     const char *operation;
     PyObject *arguments;
     if (!PyArg_ParseTuple(args, "sO:execute", &operation, &arguments)) {
+        return NULL;
+    }
+    /* Dependency gate runs before any handler so a refused operation never
+     * touches FL memory, even if its handler has a partial write path. */
+    ModuleState *state = PyModule_GetState(self);
+    const char *gate_error = fl_dependency_gate(operation, state->engine);
+    if (gate_error) {
+        PyErr_Format(PyExc_RuntimeError, "Operation %s refused: %s", operation, gate_error);
         return NULL;
     }
     if (!strcmp(operation, "mixer.insert_empty_slot")) {

@@ -31,7 +31,7 @@ if ($ModuleSuffix) {
 try {
     & dlltool.exe -m i386:x86-64 -d (Join-Path $source 'python312.def') -l $importLibrary
     if ($LASTEXITCODE -ne 0) { throw 'Failed to build the CPython import library.' }
-    & gcc.exe -std=c17 -Wall -Wextra -Werror -O2 -shared @moduleFlags "-I$PythonInclude" (Join-Path $source 'bridge.c') (Join-Path $source 'mixer_slots.c') (Join-Path $source 'channels.c') (Join-Path $source 'playlist.c') (Join-Path $source 'pattern_notes.c') (Join-Path $source 'timeline.c') (Join-Path $source 'automation.c') $importLibrary -ladvapi32 -o $extension
+    & gcc.exe -std=c17 -Wall -Wextra -Werror -O2 -shared @moduleFlags "-I$PythonInclude" (Join-Path $source 'bridge.c') (Join-Path $source 'dependencies.c') (Join-Path $source 'mixer_slots.c') (Join-Path $source 'channels.c') (Join-Path $source 'playlist.c') (Join-Path $source 'pattern_notes.c') (Join-Path $source 'timeline.c') (Join-Path $source 'automation.c') $importLibrary -ladvapi32 -o $extension
     if ($LASTEXITCODE -ne 0) { throw 'Failed to build the FL native extension.' }
 } finally {
     Remove-Item -LiteralPath $importLibrary -ErrorAction SilentlyContinue

@@ -20,3 +20,5 @@ EXPORTS
     PyExc_ValueError DATA
     _PyArg_ParseTuple_SizeT
     PyErr_Format
+    PyDict_New
+    PyDict_SetItemString
