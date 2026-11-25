@@ -13,35 +13,23 @@
 
 static PyObject *describe(PyObject *self, PyObject *unused) {
     (void)unused;
-    ModuleState *state = PyModule_GetState(self);
+    (void)self;
     PyObject *dependencies = fl_describe_dependencies();
     if (!dependencies) {
         return NULL;
     }
-    PyObject *result = Py_BuildValue("{s:i,s:s,s:[sssssssssssssssssssssssssssssssssss],s:O}",
+    PyObject *operations = fl_describe_operations();
+    if (!operations) {
+        Py_DECREF(dependencies);
+        return NULL;
+    }
+    PyObject *result = Py_BuildValue("{s:i,s:s,s:O,s:O}",
                          "api_version", 1,
                          "engine_profile", "26.1.7.5654-x64",
-                         "operations", "mixer.insert_empty_slot", "playlist.read_clips",
-                         "playlist.move_clip", "playlist.insert_clip",
-                         "playlist.delete_clip", "playlist.duplicate_clip",
-                         "playlist.set_clip_muted", "playlist.trim_clip", "automation.read_points",
-                         "automation.set_point_value", "automation.set_point_tension",
-                         "automation.move_point", "automation.edit_points",
-                         "automation.set_point_curve",
-                         "automation.vtable_dump",
-                         "automation.read_links", "automation.create_source",
-                         "channel.add_sampler", "channel.add_generator",
-                         "channel.replace_sample",
-                         "pattern.read_notes", "pattern.add_notes", "pattern.write_notes",
-                         "timeline.read_markers", "timeline.add_marker",
-                         "timeline.delete_marker", "timeline.refresh",
-                         "arrangement.read_all", "arrangement.add",
-                         "arrangement.clone", "arrangement.delete", "arrangement.set_current",
-                         "arrangement.set_name", "project.save_copy",
-                         "mixer.remove_effect",
+                         "operations", operations,
                          "dependencies", dependencies);
+    Py_DECREF(operations);
     Py_DECREF(dependencies);
-    (void)state;
     return result;
 }
 

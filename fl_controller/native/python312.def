@@ -22,3 +22,6 @@ EXPORTS
     PyErr_Format
     PyDict_New
     PyDict_SetItemString
+    PyList_New
+    PyList_Append
+    PyUnicode_FromString

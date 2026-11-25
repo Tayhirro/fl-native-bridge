@@ -41,7 +41,14 @@ def main() -> int:
     if missing_deps:
         print(f"FAIL gated writes absent from dependency map: {missing_deps}")
         return 1
-    print(f"PASS operation table: {len(operations)} operations, {len(dependencies)} gated")
+    if set(operations) != set(dependencies):
+        print("FAIL operations and dependencies are not the same catalogue")
+        return 1
+    evidence = {d.get("evidence") for d in dependencies.values()}
+    if evidence != {"independent", "build-gated"}:
+        print(f"FAIL evidence categories incomplete: {evidence}")
+        return 1
+    print(f"PASS operation table: {len(operations)} operations, catalogue unified")
 
     try:
         module.initialize()

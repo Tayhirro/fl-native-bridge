@@ -31,21 +31,90 @@ typedef struct {
     const char *layout_state;
     const char *callconv_state;
     int write;
+    const char *evidence;       /* independent | build-gated */
 } OperationDependency;
 
-/* Only the operations with explicit cross-checks are listed here. Other
- * operations remain covered by the exact-build gate and their in-handler
- * checks; describe() reports them as build-gated without claiming more. */
-/* Mutable copies backing the gate and describe(). A test override may only
- * DOWNGRADE a field to "unsupported"; it can never raise evidence level, so
- * exposing the hook does not create a path around the gate. */
+/* The single source of truth for both describe().operations and the gate.
+ * "independent" means the entry point was separately observed on this build
+ * (profile header records the byte signature); "build-gated" means only the
+ * exact SHA-256 plus the existing in-handler checks apply. No entry here
+ * claims more than that. A test override may only DOWNGRADE a field. */
 static OperationDependency dependencies[] = {
+    /* --- independent entry evidence (recorded in the engine profile) --- */
+    {"playlist.trim_clip", SET_CLIP_SOURCE_RANGE, TEXT_START, TEXT_END,
+     "verified", "verified", "verified", 1, "independent"},
+    {"automation.create_source", CREATE_AUTOMATION, TEXT_START, TEXT_END,
+     "verified", "verified", "verified", 1, "independent"},
+    {"pattern.add_notes", RECORD_NOTE_ON, TEXT_START, TEXT_END,
+     "verified", "verified", "verified", 1, "independent"},
+    {"pattern.write_notes", RECORD_NOTE_ON, TEXT_START, TEXT_END,
+     "verified", "verified", "verified", 1, "independent"},
+
+    /* --- FX writes: dynamic vtable entry, build-gated --- */
     {"mixer.insert_empty_slot", 0, TEXT_START, TEXT_END,
-     "build-gated", "build-gated", "verified", 1},
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
     {"mixer.remove_effect", 0, TEXT_START, TEXT_END,
-     "build-gated", "build-gated", "verified", 1},
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
     {"project.save_copy", PROJECT_SAVE_WORKER, TEXT_START, TEXT_END,
-     "build-gated", "build-gated", "verified", 1},
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
+
+    /* --- remaining operations: exact build + in-handler checks only --- */
+    {"playlist.read_clips", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 0, "build-gated"},
+    {"playlist.move_clip", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
+    {"playlist.insert_clip", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
+    {"playlist.delete_clip", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
+    {"playlist.duplicate_clip", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
+    {"playlist.set_clip_muted", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
+    {"automation.read_points", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 0, "build-gated"},
+    {"automation.set_point_value", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
+    {"automation.set_point_tension", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
+    {"automation.move_point", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
+    {"automation.edit_points", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
+    {"automation.set_point_curve", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
+    {"automation.vtable_dump", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 0, "build-gated"},
+    {"automation.read_links", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 0, "build-gated"},
+    {"channel.add_sampler", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
+    {"channel.add_generator", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
+    {"channel.replace_sample", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
+    {"pattern.read_notes", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 0, "build-gated"},
+    {"timeline.read_markers", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 0, "build-gated"},
+    {"timeline.add_marker", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
+    {"timeline.delete_marker", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
+    {"timeline.refresh", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
+    {"arrangement.read_all", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 0, "build-gated"},
+    {"arrangement.add", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
+    {"arrangement.clone", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
+    {"arrangement.delete", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
+    {"arrangement.set_current", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
+    {"arrangement.set_name", 0, TEXT_START, TEXT_END,
+     "build-gated", "build-gated", "verified", 1, "build-gated"},
 };
 
 /* Non-NULL only when a test explicitly installs a fake engine. Never set by
@@ -183,14 +252,16 @@ PyObject *fl_describe_dependencies(void) {
          * range and the exact-build hash; that is build-gated evidence, not
          * an independent proof of the function's identity. */
         PyObject *entry = Py_BuildValue(
-            "{s:s,s:s,s:s,s:s,s:i,s:i,s:i}",
+            "{s:s,s:s,s:s,s:s,s:s,s:i,s:i,s:i,s:i}",
             "function_entry", dependency->entry_rva ? "verified" : "build-gated",
             "global_addresses", dependency->globals_state,
             "object_layout", dependency->layout_state,
             "calling_convention", dependency->callconv_state,
+            "evidence", dependency->evidence,
             "entry_rva", (int)dependency->entry_rva,
             "rva_low", (int)dependency->entry_low,
-            "rva_high", (int)dependency->entry_high);
+            "rva_high", (int)dependency->entry_high,
+            "write", dependency->write);
         if (!entry || PyDict_SetItemString(result, dependency->operation, entry) < 0) {
             Py_XDECREF(entry);
             Py_DECREF(result);
@@ -204,4 +275,24 @@ PyObject *fl_describe_dependencies(void) {
 int fl_operation_is_write(const char *operation) {
     const OperationDependency *dependency = find_dependency(operation);
     return dependency ? dependency->write : 0;
+}
+
+/* Operations are derived from the same table as the gate, so the advertised
+ * catalogue and the checked dependencies cannot drift apart. */
+PyObject *fl_describe_operations(void) {
+    PyObject *result = PyList_New(0);
+    if (!result) {
+        return NULL;
+    }
+    size_t index;
+    for (index = 0; index < sizeof(dependencies) / sizeof(dependencies[0]); ++index) {
+        PyObject *name = PyUnicode_FromString(dependencies[index].operation);
+        if (!name || PyList_Append(result, name) < 0) {
+            Py_XDECREF(name);
+            Py_DECREF(result);
+            return NULL;
+        }
+        Py_DECREF(name);
+    }
+    return result;
 }
