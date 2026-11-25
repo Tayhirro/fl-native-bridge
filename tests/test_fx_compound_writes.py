@@ -146,8 +146,13 @@ class Harness:
         return {"success": False, "error": "unexpected action " + action}
 
 
+_counter = {"n": 0}
+
+
 def uuid():
-    return hashlib.sha256(str(__import__("time").time_ns()).encode()).hexdigest()[:32]
+    """Deterministically distinct 32-hex IDs for test correlation/queue values."""
+    _counter["n"] += 1
+    return hashlib.sha256(str(_counter["n"]).encode()).hexdigest()[:32]
 
 
 @pytest.fixture
@@ -227,7 +232,7 @@ def test_swap_rejects_before_any_write_on_bad_context(harness):
 
 
 def test_swap_keeps_digest_reporting_on_neighbor_change(harness):
-    """A changed neighbouring slot must not be reported as a successful swap."""
+    """A changed neighbouring slot is visible but must not corrupt the swap."""
     original_parse = harness.parse_states
 
     def noisy_parse(data):
@@ -237,9 +242,15 @@ def test_swap_keeps_digest_reporting_on_neighbor_change(harness):
 
     harness.monkeypatch.setattr(tools, "parse_flp_plugin_states", noisy_parse)
     result = tools.fl_swap_mixer_effects(3, 5, 7)
-    assert result["success"] is False or result["state_matched"] is True
-    # The neighbouring slot is reported only via digests we actually read.
-    assert "a_after_sha256" in result
+    # The two swap slots still cross-match; the neighbour is neither touched
+    # nor mistaken for one of the captured slots.
+    assert result["success"] is True and result["state_matched"] is True
+    assert result["a_after_sha256"] == hashlib.sha256(harness.original[(3, 7)]).hexdigest()
+    assert result["b_after_sha256"] == hashlib.sha256(harness.original[(3, 5)]).hexdigest()
+    assert (3, 9) not in harness.states or harness.states[(3, 9)] == b"NEIGHBOR"
+    # Only the two target slots contribute to the swap plan.
+    assert result["a"]["sha256"] == hashlib.sha256(harness.original[(3, 5)]).hexdigest()
+    assert result["b"]["sha256"] == hashlib.sha256(harness.original[(3, 7)]).hexdigest()
 
 
 def test_clone_only_succeeds_on_digest_match(harness):

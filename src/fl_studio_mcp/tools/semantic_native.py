@@ -1276,7 +1276,7 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
     saved = None
     synths: list[Path] = []
     verify_path = None
-    restore_path = None
+    restore_paths: list[Path] = []
     conn = get_connection()
 
     def finish(result: dict) -> dict:
@@ -1284,7 +1284,7 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
         result.setdefault("status_request_ids", _status_request_ids(steps))
         result.setdefault("irreversible", True)
         retained = _release_when_final(
-            [p for p in (saved, verify_path, restore_path, *synths) if p is not None], steps)
+            [p for p in (saved, verify_path, *restore_paths, *synths) if p is not None], steps)
         if retained:
             result["retained_artifacts"] = retained
         return result
@@ -1341,6 +1341,72 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
                                   {"track": track, "slot": slot}))
         return result
 
+    def restore_if_permitted(reason: str) -> dict:
+        """Restore both slots only after writes are final and state is confirmed.
+
+        Three gates, in order: every submitted request must have left the
+        queue, the pinned instance/project context must still match, and a
+        fresh save-copy must confirm the current slot states. Without all
+        three, a compensation could replay an in-flight write into a moved
+        project. Both original digests are then checked independently before
+        ``restored`` may be reported.
+        """
+        response: dict = {"restore_reason": reason, "restored": False}
+        if not _terminal(steps):
+            response["restore_blocked"] = "submitted requests have not finished"
+            return response
+        fresh = fl_list_capabilities()
+        if (not fresh.get("success") or fresh.get("context") != context):
+            response["restore_blocked"] = "instance, controller or project changed"
+            return response
+        restore_copy = saved.with_suffix(".restore.flp")
+        restore_paths.append(restore_copy)
+        observed = current_state(restore_copy, "restore_readback")
+        if observed is None:
+            response["restore_blocked"] = "could not read back slot state"
+            return response
+        observed_a = observed.get((track, slot_a))
+        observed_b = observed.get((track, slot_b))
+        response["pre_restore_a_sha256"] = digest(observed_a)
+        response["pre_restore_b_sha256"] = digest(observed_b)
+
+        # Restore only slots whose state no longer matches the capture.
+        repairs = []
+        if digest(observed_a) != plan["a"]["sha256"]:
+            repairs.append((slot_a, names[slot_a], states[slot_a], plan["a"]["sha256"], "a"))
+        if digest(observed_b) != plan["b"]["sha256"]:
+            repairs.append((slot_b, names[slot_b], states[slot_b], plan["b"]["sha256"], "b"))
+        for slot, plugin, state, _want, label in repairs:
+            occupied = digest(observed.get((track, slot))) is not None
+            if occupied:
+                removed = remove(slot, "restore_remove_" + label)
+                if (_step_outcome(removed) == "outcome_unknown"
+                        or not removed.get("success")):
+                    response["restore_blocked"] = "restore removal failed or is unknown"
+                    return response
+            loaded = load(plugin, state, slot, "restore_load_" + label)
+            if (loaded.get("write_outcome_unknown") or not loaded["success"]):
+                response["restore_blocked"] = "restore load failed or is unknown"
+                return response
+
+        time.sleep(0.2)
+        verify_path_local = saved.with_suffix(".restore_verify.flp")
+        restore_paths.append(verify_path_local)
+        final = current_state(verify_path_local, "restore_verify")
+        if final is None:
+            response["restore_blocked"] = "could not verify restored slots"
+            return response
+        final_a, final_b = final.get((track, slot_a)), final.get((track, slot_b))
+        response["a_after_sha256"], response["b_after_sha256"] = digest(final_a), digest(final_b)
+        # Both originals independently verified before claiming recovery.
+        response["restored"] = bool(digest(final_a) == plan["a"]["sha256"]
+                                    and digest(final_b) == plan["b"]["sha256"])
+        if response["restored"]:
+            response["note"] = "Both slots restored from the captured event-213 records"
+        else:
+            response["restore_blocked"] = "restored digests do not match both originals"
+        return response
+
     try:
         names = {slot_a: plugin_of(slot_a, "identify_a"),
                  slot_b: plugin_of(slot_b, "identify_b")}
@@ -1393,25 +1459,32 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
                            "error": r1.get("error") or "remove A failed"})
         l1 = load(names[slot_b], states[slot_b], slot_a, "load_b_into_a")
         if l1.get("write_outcome_unknown"):
+            # Never compensate while the original write may still be in flight.
             return finish({**plan, "success": False, "submitted": True,
                            "state": "outcome_unknown", "error": "load B into A is unknown"})
         if not l1["success"]:
-            return finish({**plan, "success": False, "submitted": True,
-                           "error": l1.get("error") or "load B into A failed"})
+            result = {**plan, "success": False, "submitted": True,
+                      "error": l1.get("error") or "load B into A failed"}
+            result.update(restore_if_permitted("load_b_into_a_failed"))
+            return finish(result)
         r2 = remove(slot_b, "remove_b")
         if _step_outcome(r2) == "outcome_unknown":
             return finish({**plan, "success": False, "submitted": True,
                            "state": "outcome_unknown", "error": "remove B result is unknown"})
         if not r2.get("success"):
-            return finish({**plan, "success": False, "submitted": True,
-                           "error": r2.get("error") or "remove B failed; A now holds B"})
+            result = {**plan, "success": False, "submitted": True,
+                      "error": r2.get("error") or "remove B failed; A now holds B"}
+            result.update(restore_if_permitted("remove_b_failed"))
+            return finish(result)
         l2 = load(names[slot_a], states[slot_a], slot_b, "load_a_into_b")
         if l2.get("write_outcome_unknown"):
             return finish({**plan, "success": False, "submitted": True,
                            "state": "outcome_unknown", "error": "load A into B is unknown"})
         if not l2["success"]:
-            return finish({**plan, "success": False, "submitted": True,
-                           "error": l2.get("error") or "load A into B failed; B empty"})
+            result = {**plan, "success": False, "submitted": True,
+                      "error": l2.get("error") or "load A into B failed; B empty"}
+            result.update(restore_if_permitted("load_a_into_b_failed"))
+            return finish(result)
 
         time.sleep(0.2)
         verify_path = saved.with_suffix(".verify.flp")
@@ -1423,12 +1496,17 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
         matched = bool(a_after and b_after
                        and digest(a_after) == plan["b"]["sha256"]
                        and digest(b_after) == plan["a"]["sha256"])
-        return finish({**plan, "submitted": True, "success": matched,
-                       "state_matched": matched,
-                       "a_after_sha256": digest(a_after),
-                       "b_after_sha256": digest(b_after),
-                       "note": ("Slots swapped with complete state" if matched
-                                else "Digests did not cross-match; inspect steps")})
+        if matched:
+            return finish({**plan, "submitted": True, "success": True,
+                           "state_matched": True,
+                           "a_after_sha256": digest(a_after),
+                           "b_after_sha256": digest(b_after),
+                           "note": "Slots swapped with complete state"})
+        result = {**plan, "submitted": True, "success": False, "state_matched": False,
+                  "a_after_sha256": digest(a_after), "b_after_sha256": digest(b_after),
+                  "note": "Digests did not cross-match; repair attempted from capture"}
+        result.update(restore_if_permitted("digest_mismatch"))
+        return finish(result)
     except (OSError, ValueError, RuntimeError) as exc:
         return finish({"success": False, "submitted": any(
             step.get("submitted") for step in steps), "error": str(exc)})
