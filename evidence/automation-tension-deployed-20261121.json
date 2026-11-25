@@ -1,0 +1,297 @@
+{
+ "cap": {
+  "context": "<pid>:<session>:<revision>",
+  "native": {
+   "api_version": 1,
+   "engine_profile": "26.1.7.5654-x64",
+   "operations": [
+    "mixer.insert_empty_slot",
+    "playlist.read_clips",
+    "playlist.move_clip",
+    "automation.read_points",
+    "automation.set_point_value",
+    "automation.set_point_tension"
+   ],
+   "available": true,
+   "engine_path": "D:\\fl-2026\\\u65b0\u5efa\u6587\u4ef6\u5939\\FLEngine_x64.dll"
+  },
+  "capability_request_id": "3a65dd817acc4ceaa29feaadb2cd6623",
+  "success": true,
+  "request_id": "7e10d91be9c44215a7a36129e1667ce8",
+  "protocol": 2,
+  "completed_at": 1795195364.6527104,
+  "action": "native.semanticDescribe",
+  "client_pid": 21816
+ },
+ "before": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "channel": 8,
+  "source_event": 524288,
+  "count": 2,
+  "maximum_beats": 2147483647.0,
+  "offset": 0,
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:0:0x0.0p+0:000000009a99593f000000000000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 8.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:000000419a99593f00000000000000020000000000000000000000000000803f"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "6b8c43069adc44aeb59399b79518f410",
+  "request_id": "605efea72b464f349b1cf4802db28252",
+  "protocol": 2,
+  "completed_at": 1795195364.7839947,
+  "action": "native.readAutomationPoints",
+  "client_pid": 21816
+ },
+ "other": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "channel": 12,
+  "source_event": 786432,
+  "count": 2,
+  "maximum_beats": 2147483647.0,
+  "offset": 0,
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.5,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:12:786432:0:0x0.0p+0:000000000000003f000000000000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 8.0,
+    "value": 0.5,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:12:786432:1:0x0.0p+0:000000410000003f00000000000000020000000000000000000000000000803f"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "9f3c34bdc03c45409fe57bcedc95201e",
+  "request_id": "099115c8a64a4beaba78507facacbda8",
+  "protocol": 2,
+  "completed_at": 1795195364.9069111,
+  "action": "native.readAutomationPoints",
+  "client_pid": 21816
+ },
+ "preview": {
+  "success": true,
+  "submitted": false,
+  "dry_run": true,
+  "unchanged": false,
+  "before": 0.0,
+  "after": -0.6000000238418579,
+  "native_request_id": "465db7ad99594b86aeebf28be5317161",
+  "request_id": "ee8626897a7a4398b09f7550853e0d58",
+  "protocol": 2,
+  "completed_at": 1795195364.9702327,
+  "action": "native.setAutomationPointTension",
+  "client_pid": 21816
+ },
+ "edited": {
+  "success": true,
+  "submitted": true,
+  "verified": true,
+  "request_id": "c14ed3e3a2e44c43bbe25943cf72330e",
+  "context": "<pid>:<session>:<revision>",
+  "observed": {
+   "index": 0,
+   "time_beats": 0.0,
+   "value": 0.8500000238418579,
+   "tension": -0.6000000238418579,
+   "curve": 0,
+   "snapshot_ref": "<pid>:<session>:<revision>:8:524288:0:0x0.0p+0:000000009a99593f9a9919bf0000000000000000000000000000000000000000"
+  }
+ },
+ "after": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "channel": 8,
+  "source_event": 524288,
+  "count": 2,
+  "maximum_beats": 2147483647.0,
+  "offset": 0,
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.8500000238418579,
+    "tension": -0.6000000238418579,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:0:0x0.0p+0:000000009a99593f9a9919bf0000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 8.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:000000419a99593f00000000000000020000000000000000000000000000803f"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "b21cc28ac62048f89ccf65c4b42f1615",
+  "request_id": "e1bbdf26947748b895933717d92ac5c1",
+  "protocol": 2,
+  "completed_at": 1795195365.4275024,
+  "action": "native.readAutomationPoints",
+  "client_pid": 21816
+ },
+ "stale": {
+  "success": false,
+  "submitted": false,
+  "error": "Automation point changed; read it again",
+  "native_request_id": "43628212da9e40c9be1412798519bee7",
+  "request_id": "fc26538b684b46d982d263829bb536da",
+  "protocol": 2,
+  "completed_at": 1795195365.4933522,
+  "action": "native.setAutomationPointTension",
+  "client_pid": 21816
+ },
+ "other_after": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "channel": 12,
+  "source_event": 786432,
+  "count": 2,
+  "maximum_beats": 2147483647.0,
+  "offset": 0,
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.5,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:12:786432:0:0x0.0p+0:000000000000003f000000000000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 8.0,
+    "value": 0.5,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:12:786432:1:0x0.0p+0:000000410000003f00000000000000020000000000000000000000000000803f"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "73bc1c0143a7431ba573a1848309a1ce",
+  "request_id": "adeb7d335bc34f0087b0b7b8fb2b702b",
+  "protocol": 2,
+  "completed_at": 1795195365.6218183,
+  "action": "native.readAutomationPoints",
+  "client_pid": 21816
+ },
+ "undo": {
+  "module": "general",
+  "method": "undoUp",
+  "read_only": false,
+  "result": -1903763589,
+  "success": true,
+  "request_id": "aa190a3fe4b94f47a882eed727c5f7e9",
+  "protocol": 2,
+  "completed_at": 1795195365.682039,
+  "action": "native.call",
+  "client_pid": 28928
+ },
+ "restored": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "channel": 8,
+  "source_event": 524288,
+  "count": 2,
+  "maximum_beats": 2147483647.0,
+  "offset": 0,
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:0:0x0.0p+0:000000009a99593f000000000000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 8.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:000000419a99593f00000000000000020000000000000000000000000000803f"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "eabb01a31e87486197e2c8f24cb7ff0e",
+  "request_id": "06bf5a04507645fd85d3ac2c3b06a863",
+  "protocol": 2,
+  "completed_at": 1795195365.8006446,
+  "action": "native.readAutomationPoints",
+  "client_pid": 21816
+ },
+ "value_edit": {
+  "success": true,
+  "submitted": true,
+  "verified": true,
+  "request_id": "e584bc0640824dec806d4e4be7844d23",
+  "context": "<pid>:<session>:<revision>",
+  "observed": {
+   "index": 1,
+   "time_beats": 8.0,
+   "value": 0.30000001192092896,
+   "tension": 0.0,
+   "curve": 0,
+   "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:000000419a99993e00000000000000020000000000000000000000000000803f"
+  }
+ },
+ "value_restored": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "channel": 8,
+  "source_event": 524288,
+  "count": 2,
+  "maximum_beats": 2147483647.0,
+  "offset": 0,
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:0:0x0.0p+0:000000009a99593f000000000000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 8.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:000000419a99593f00000000000000020000000000000000000000000000803f"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "7b70d9af86254d6f8868b951962884bc",
+  "request_id": "196b3ff830434fff8715f1eb72652828",
+  "protocol": 2,
+  "completed_at": 1795195366.1695929,
+  "action": "native.readAutomationPoints",
+  "client_pid": 21816
+ }
+}

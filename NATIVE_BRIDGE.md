@@ -13,9 +13,18 @@ The installer has copied the controller and helpers to the existing FL user-data
 2. Restart/reconnect the MCP server to refresh its tool catalog.
 3. Call `fl_bridge_status`. Continue when `active` is true, `needs_reload` is false, and the intended FL process is listed.
 
-Reloading the controller does not require saving the project. For this session, the user explicitly prohibited project save/Save As and additional backups. Do not replace the current project or restart FL for activation; use the observed Reload control.
+Reloading the controller does not require saving the project. Use FL's Reload
+control rather than replacing the project.
 
-When multiple controller endpoints are active, call `fl_list_instances` and `fl_select_instance(pid)` first. Each process has a separate command directory.
+When multiple controller endpoints are active, call `fl_list_instances` and
+`fl_select_instance(pid)` first. Each process has a separate command directory.
+
+Native writes are gated per operation. `fl_list_capabilities()` reports
+`native.dependencies` with the function-entry, global-address, object-layout
+and calling-convention state of `mixer.insert_empty_slot`,
+`mixer.remove_effect` and `project.save_copy`. A dependency that is not at least
+`build-gated`, or a calling convention that is not `verified`, refuses the call
+before its handler runs.
 
 ## Operations
 
@@ -65,35 +74,56 @@ Controller reloads keep completed responses on disk. A request that was inflight
 
 Existing MIDI tools retain their legacy transport until the first queue-v2 endpoint is loaded. Once a v2 endpoint is present, stale heartbeats produce an error rather than falling back to a different execution path. This does not serialize old, already-running MCP server processes: reconnect them to use the new code.
 
+## Failure and recovery semantics
+
+- **Ambiguous writes are never replayed.** A timed-out mutation returns
+  `error_type: OutcomeUnknown` with its queue envelope ID. The tool records both
+  that ID and its own correlation ID in `steps[].queue_request_id` and
+  `steps[].correlation_id`; `fl_get_request_status(queue_request_id)` resolves
+  the real request. A compensating write is attempted only after the original
+  request has left the queue and a readback confirms the pinned instance,
+  project context and slot state. `fl_swap_mixer_effects` reports recovery only
+  when **both** captured digests are independently matched again, and always
+  reports `irreversible: true` because FL registers no restorable undo for the
+  removal step.
+- **Context is pinned per compound write.** The context captured before the
+  first mutation is forwarded to the loader and every save-copy; a controller
+  reload, project change or instance switch refuses later steps instead of
+  silently acquiring a new context.
+- **REC events are blocked.** `plugins.setParamRec` and generic
+  `general.processRECEvent` are disabled after an adapter crash caused by an
+  incomplete event namespace. `fl_set_effect_parameter` uses
+  `plugins.setParamValue` with a subsequent-callback readback. The optional
+  `allow_mixer_fallback=True` path checks the complete namespace and parameter
+  name before `mixer.automateEvent`; it is off by default.
+- **OLE drag/drop is bounded.** It runs in a helper with an 8-second limit; a
+  timeout returns `OutcomeUnknown` with no retry. The helper sets DPI awareness
+  before initialization and wakes its own modal loop with `PostThreadMessage`.
+  It never sends global mouse events.
+- **Screenshots use the visible HWND's Window DC** (physical pixels), never the
+  desktop DC or `PrintWindow`. HWNDs and input points are bound to the selected
+  FL process; a moved cursor or changed target aborts before any button event.
+
 ## Validation and present limits
 
-Offline verification includes multi-thread/multi-process requests, correlation, duplicate suppression, expiration, inflight recovery, partial response reads, event overflow, edit guards, typed arguments, callback preservation, disabled-REC bypass protection, public parameter setter with subsequent-callback verification, OLE timeout ambiguity, and real Win32 geometry round trips on an owned test window. A real OLE cancellation test confirms that posting to the helper's own thread queue wakes the drag loop; no global mouse events or accepted drop are used in that test.
+Offline verification covers multi-thread/multi-process requests, correlation,
+duplicate suppression, expiration, inflight recovery, partial response reads,
+event overflow, edit guards, typed arguments, callback preservation,
+disabled-REC bypass protection, public parameter setter readback, OLE timeout
+ambiguity, idle-thread dispatch gating and Win32 geometry round trips. The C
+gate is exercised by an isolated MinGW build that imports under CPython 3.12 and
+refuses native execution when no matching engine is loaded.
 
-FL runtime verification passed queue activation, catalog discovery (439 public callables across 13 available modules), project/track/transport state, form movement/restoration, pattern rename/restoration, channel volume/restoration, send level/restoration, and change events. The catalog includes the blocked `general.processRECEvent`; it does not mean 439 functions have been exercised. A real stdio FastMCP Client discovered 114 tools, also present in this session's connected tool catalog. Effect loading passed at mixer track 26, slot 9 in about 1.9 seconds. Earlier attempts reached unintended tracks; they are recorded as failed acceptance. A changed plugin name does not prove complete preset contents. Pattern cloning increased the count from 6 to 7, then a single native Undo restored 6.
+Live results and their exact build, expected result, readback and Undo boundary
+are in [evidence/README.md](evidence/README.md). Session-specific observations
+are archived in [evidence/session-notes-archive.md](evidence/session-notes-archive.md).
 
-The REC test crashed FL. The old adapter used plugin location ID `0x06890000` as a full REC event ID, omitting the plugin event namespace. The engine read address `0x160`. The old `plugins.setParamRec` adapter and generic `general.processRECEvent` are now blocked. After the user-authorized recovery, `fl_set_effect_parameter` passed through `plugins.setParamValue`: original value `0.26305555555555554`, requested/read-back value `0.6`, then verified restoration. Wet mix also passed set/read-back/restoration in subsequent callbacks. The optional `allow_mixer_fallback=True` path checks the complete event namespace and parameter name before `mixer.automateEvent`; it is disabled by default and has only offline write-path tests. Read-only event-name resolution passed. Audio import and routing later passed in a fresh stdio MCP service: 38 to 39 global channels, new channel 38 named MCP_INTERFACE_TEST, mixer route read back as 26, and a visible clip on Playlist Track 18. Subsequent 2026-11-18 tests verified selected-clip start/length edits at one-tick resolution and a real one-second mix render; see TEST-20261118.md in the acceptance directory.
-
-OLE runs in a separate helper with an 8-second limit. A timeout returns `OutcomeUnknown`, never an automatic retry. The helper sets process DPI awareness before OLE initialization. Its modal loop is woken with correctly positioned `PostThreadMessage` messages on its own thread. Effect loading uses `setActiveTrack`, `setTrackNumber(track, 1)`, a short UI-settle interval and a second selection check. The successful acceptance recorded identical physical cursor/message coordinates throughout the drag.
-
-On 2026-11-17, PID 4760 reported controller build `2026-11-16.1`, `active=true` and `needs_reload=false`. Source and installed copies of all three controller files matched. Its project was `Projects/Backup/untitled.flp`, with an existing changed flag of 2, 38 global channels and 7 patterns. These are observations of that instance, not a guarantee that later instances have the same state. Disk installation, runtime activation, accepted drops and verified operations are reported separately. Do not retry the inflight REC request `95976b015d73400e9f19ca2d52d2272c`.
-
-The screenshot change passed through a fresh stdio MCP subprocess: 2560 by 1368 PNG, foreground HWND unchanged. An already-running MCP server can retain the previous screenshot function until reconnected; its older version still requires foreground focus. Windows refused foreground attachment in the current server. After the user selected FL in the foreground, successful audio-drop acceptance took about 1.61 seconds. Do not work around foreground refusal by changing Windows security settings.
-
-Two preceding MCP drops timed out before any helper phase log. Readback confirmed unchanged channel count and changed flag before a controlled retest. A print-only child process reproduced the startup timeout inside MCP. Explicit stdin=DEVNULL fixed Windows venv child startup (about 0.05 seconds), and both MCP preflight and actual import then passed. The helper accepts argv only, never the MCP stdin pipe. Timeout responses now retain helper_trace and last_phase; a prepare_only internal diagnostic creates the Shell data object without foreground focus, pointer motion or DoDragDrop. The already-running MCP service still needs reconnection to load the parent-side stdin change. It was not killed or restarted automatically.
-
-Latest local regression: `python -m pytest -q` reported 48 passed; Ruff F and git diff --check passed. A fresh stdio service discovered 120 tools. Current evidence and the A–E acceptance record are in `D:/hmdp/artifacts/fl-studio-interface-audit-20261115/IMPLEMENTATION.md` and `TEST-20261118.md`. PID 6864 opened Desktop/untitled.flp with 39 channels and 7 patterns. Controlled parameter/clip edits were restored, and one accidentally placed Pattern clip was removed after inspecting the Undo target. Undo history and the changed flag are not restored. No project save was performed; the FLP's observed size and last-write time remained unchanged.
-
-Plugin parameter capture is paged and includes wrapper placeholders. Addictive Drums 2 exposed 4240 entries, 452 named. After a real FST save/load, all named values matched, while one unnamed slot changed. Restore skips unnamed slots and reports the skipped count. The FST round trip restores a host-supported preset blob; it does not independently expose every private runtime field. Plugin setter calls now pass pickupMode=0 and useGlobalIndex=True in their separate positions.
-
-Clip-time editing uses Ctrl+wheel on observed start/duration fields, one event per tick. Modifiers are held long enough for processing, and property closure uses Escape after a host idle read. A posted WM_CLOSE was found to overtake pending wheel input and change the Playlist view; that failed trial is retained. The final MCP test changed start 71636 to 71637 and length 192 to 193, then restored 71636–71828. Bounds describe the selected range, not an inventory of all clip objects.
-
-Literal text uses UTF-16 Unicode input packets rather than keyboard-layout-dependent typing, fixing filename corruption under a Chinese IME. The legacy export helper no longer sends Ctrl+S or deletes existing audio, and its child stdin is isolated. Its complete one-click UI workflow still has unverified fixed assumptions. The accepted render was performed with observed MCP UI steps and separately measured by fl_verify_audio_output: 44100 stereo PCM frames, exactly one second, no nonfinite/full-scale samples.
-
-Public native APIs do not expose all FL internals, clip data, opaque plugin state or every custom editor operation. Generic desktop input allows further UI actions, but this is not a guarantee of complete semantic coverage or a claim that every FL capability has passed regression testing.
-
-Generic dispatch accepts JSON values, bytes, tuples and advertised scalar constants. Native signatures are often unavailable to reflection, and arbitrary native Python objects do not have full RPC serialization. An enabled catalog entry only passes dispatch checks; each signature and result type still needs a suitable workflow and validation.
-
-The adapter uses BitBlt from the selected HWND's Window DC. Desktop-DC capture was observed to disagree with the target window, so it is no longer used. It never invokes PrintWindow/WM_PRINT on FL or shows hidden FL windows directly with Win32. All HWNDs and input points are bound to the selected FL process; a moved cursor or changed target aborts before a button event. Geometry is in physical pixels and a move returns the observed result.
+Public native APIs do not expose all FL internals, clip data, opaque plugin
+state or every custom editor operation. Generic desktop input allows further UI
+actions, but is not a guarantee of complete semantic coverage. Generic dispatch
+accepts JSON values, bytes, tuples and advertised scalar constants; native
+signatures are often unavailable to reflection, so an enabled catalog entry
+only passes dispatch checks and still needs a suitable workflow and validation.
 
 ## Direct diagnostic CLI
 
@@ -103,4 +133,6 @@ The adapter uses BitBlt from the selected HWND's Window DC. Desktop-DC capture w
 & .\.venv\Scripts\python.exe .\scripts\native_cli.py native.call --params '{"module":"mixer","method":"trackCount","args":[]}'
 ```
 
-Historical controller backups are under `backups/native-*`; no additional project backups are required. Pre-existing controller customizations are retained except that the crashing REC adapter is explicitly disabled. No FL kernel changes are part of this bridge.
+Historical controller backups are under `backups/native-*`. Pre-existing
+controller customizations are retained except that the crashing REC adapter is
+explicitly disabled. No FL binaries or kernel changes are part of this bridge.

@@ -1,0 +1,603 @@
+{
+ "cap": {
+  "context": "<pid>:<session>:<revision>",
+  "native": {
+   "api_version": 1,
+   "engine_profile": "26.1.7.5654-x64",
+   "operations": [
+    "mixer.insert_empty_slot",
+    "playlist.read_clips",
+    "playlist.move_clip",
+    "automation.read_points",
+    "automation.set_point_value",
+    "automation.set_point_tension",
+    "automation.move_point",
+    "automation.edit_points"
+   ],
+   "available": true,
+   "engine_path": "D:\\fl-2026\\\u65b0\u5efa\u6587\u4ef6\u5939\\FLEngine_x64.dll"
+  },
+  "capability_request_id": "447b3cb58b8f4e08890ed49a8b4347d4",
+  "success": true,
+  "request_id": "539c42197f064d5f945c850b299ccbcf",
+  "protocol": 2,
+  "completed_at": 1795197721.6983042,
+  "action": "native.semanticDescribe",
+  "client_pid": 41976
+ },
+ "before": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "channel": 8,
+  "source_event": 524288,
+  "count": 2,
+  "maximum_beats": 2147483647.0,
+  "offset": 0,
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:0:0x0.0p+0:000000009a99593f000000000000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 8.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:000000419a99593f00000000000000020000000000000000000000000000803f"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "c4673d74731443bebd571f428db44cb2",
+  "request_id": "e8385f77308840a283a510da0a518224",
+  "protocol": 2,
+  "completed_at": 1795197721.8266854,
+  "action": "native.readAutomationPoints",
+  "client_pid": 41976
+ },
+ "other": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "channel": 12,
+  "source_event": 786432,
+  "count": 2,
+  "maximum_beats": 2147483647.0,
+  "offset": 0,
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.5,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:12:786432:0:0x0.0p+0:000000000000003f000000000000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 8.0,
+    "value": 0.5,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:12:786432:1:0x0.0p+0:000000410000003f00000000000000020000000000000000000000000000803f"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "799810d8d3f84c19a8047ed3540a7097",
+  "request_id": "79e46585f000425d91c1aa2631fbfd10",
+  "protocol": 2,
+  "completed_at": 1795197721.947777,
+  "action": "native.readAutomationPoints",
+  "client_pid": 41976
+ },
+ "preview": {
+  "success": true,
+  "submitted": false,
+  "dry_run": true,
+  "unchanged": false,
+  "before": 0.0,
+  "after": -0.6000000238418579,
+  "native_request_id": "4842e1088f9f43a09ad3ae32da695d0c",
+  "request_id": "ac2e3ddd852f46f28e698a7b28e90018",
+  "protocol": 2,
+  "completed_at": 1795197722.010491,
+  "action": "native.setAutomationPointTension",
+  "client_pid": 41976
+ },
+ "edited": {
+  "success": true,
+  "submitted": true,
+  "verified": true,
+  "request_id": "eb0ea3ad54a941d19aaac5e4f5a94611",
+  "context": "<pid>:<session>:<revision>",
+  "observed": {
+   "index": 0,
+   "time_beats": 0.0,
+   "value": 0.8500000238418579,
+   "tension": -0.6000000238418579,
+   "curve": 0,
+   "snapshot_ref": "<pid>:<session>:<revision>:8:524288:0:0x0.0p+0:000000009a99593f9a9919bf0000000000000000000000000000000000000000"
+  }
+ },
+ "after": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "channel": 8,
+  "source_event": 524288,
+  "count": 2,
+  "maximum_beats": 2147483647.0,
+  "offset": 0,
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.8500000238418579,
+    "tension": -0.6000000238418579,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:0:0x0.0p+0:000000009a99593f9a9919bf0000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 8.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:000000419a99593f00000000000000020000000000000000000000000000803f"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "5ff58de2fd6b4650a80f12b9d4ae6e65",
+  "request_id": "3bdc0b5b8a194077bf302f405e231d6d",
+  "protocol": 2,
+  "completed_at": 1795197722.443486,
+  "action": "native.readAutomationPoints",
+  "client_pid": 41976
+ },
+ "stale": {
+  "success": false,
+  "submitted": false,
+  "error": "Automation point changed; read it again",
+  "native_request_id": "903e230711c0490eb8ae940c42df701c",
+  "request_id": "d6740adfa5164362afe231137faa0aff",
+  "protocol": 2,
+  "completed_at": 1795197722.5114493,
+  "action": "native.setAutomationPointTension",
+  "client_pid": 41976
+ },
+ "other_after": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "channel": 12,
+  "source_event": 786432,
+  "count": 2,
+  "maximum_beats": 2147483647.0,
+  "offset": 0,
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.5,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:12:786432:0:0x0.0p+0:000000000000003f000000000000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 8.0,
+    "value": 0.5,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:12:786432:1:0x0.0p+0:000000410000003f00000000000000020000000000000000000000000000803f"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "311e284b67c84c5f9ae6c2604b0e42bd",
+  "request_id": "a39a82c6cea64bdd9dfd8aba9652a419",
+  "protocol": 2,
+  "completed_at": 1795197722.63482,
+  "action": "native.readAutomationPoints",
+  "client_pid": 41976
+ },
+ "undo": {
+  "module": "general",
+  "method": "undoUp",
+  "read_only": false,
+  "result": 1699436953,
+  "success": true,
+  "request_id": "2472e966ffd344099bb84ad4e13d6a5f",
+  "protocol": 2,
+  "completed_at": 1795197722.6939564,
+  "action": "native.call",
+  "client_pid": 27088
+ },
+ "restored": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "channel": 8,
+  "source_event": 524288,
+  "count": 2,
+  "maximum_beats": 2147483647.0,
+  "offset": 0,
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:0:0x0.0p+0:000000009a99593f000000000000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 8.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:000000419a99593f00000000000000020000000000000000000000000000803f"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "98ff9d6b70ff4c90bf832851300b4eda",
+  "request_id": "3fe564c9e4b94b8e8b4a50fcc7c43d25",
+  "protocol": 2,
+  "completed_at": 1795197722.819483,
+  "action": "native.readAutomationPoints",
+  "client_pid": 41976
+ },
+ "value_edit": {
+  "success": true,
+  "submitted": true,
+  "verified": true,
+  "request_id": "bb1b2688fe954743afb6e5f5f78ce746",
+  "context": "<pid>:<session>:<revision>",
+  "observed": {
+   "index": 1,
+   "time_beats": 8.0,
+   "value": 0.30000001192092896,
+   "tension": 0.0,
+   "curve": 0,
+   "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:000000419a99993e00000000000000020000000000000000000000000000803f"
+  }
+ },
+ "value_restored": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "channel": 8,
+  "source_event": 524288,
+  "count": 2,
+  "maximum_beats": 2147483647.0,
+  "offset": 0,
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:0:0x0.0p+0:000000009a99593f000000000000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 8.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:000000419a99593f00000000000000020000000000000000000000000000803f"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "5f7761ce98c1421ba5aed6a37c4dc4cd",
+  "request_id": "5fe9f7b9a50f4ced958135bb5574c0a6",
+  "protocol": 2,
+  "completed_at": 1795197723.1846843,
+  "action": "native.readAutomationPoints",
+  "client_pid": 41976
+ },
+ "move_preview": {
+  "success": true,
+  "submitted": false,
+  "dry_run": true,
+  "unchanged": false,
+  "before": 8.0,
+  "after": 7.0,
+  "native_request_id": "b7065803ea8a4f16a48e67b90729392b",
+  "request_id": "83adc0f5fbc24dbe8b870fce58d2c996",
+  "protocol": 2,
+  "completed_at": 1795197723.3712928,
+  "action": "native.moveAutomationPoint",
+  "client_pid": 41976
+ },
+ "first_rejected": {
+  "success": false,
+  "submitted": false,
+  "error": "The first automation point must remain at beat zero"
+ },
+ "restored_move": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "channel": 8,
+  "source_event": 524288,
+  "count": 2,
+  "maximum_beats": 2147483647.0,
+  "offset": 0,
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:0:0x0.0p+0:000000009a99593f000000000000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 8.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:000000419a99593f00000000000000020000000000000000000000000000803f"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "29aa193ef6e248ad9330b324e74e6193",
+  "request_id": "30789689e415435b9132997316a6e19a",
+  "protocol": 2,
+  "completed_at": 1795197723.4915361,
+  "action": "native.readAutomationPoints",
+  "client_pid": 41976
+ },
+ "last_move": {
+  "success": true,
+  "submitted": true,
+  "verified": true,
+  "request_id": "e02bee0bf0ca43109eb168fc31737be3",
+  "context": "<pid>:<session>:<revision>",
+  "observed": [
+   {
+    "index": 1,
+    "time_beats": 7.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:0000e0409a99593f00000000000000020000000000000000000000000000803f"
+   }
+  ]
+ },
+ "last_restored": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "channel": 8,
+  "source_event": 524288,
+  "count": 2,
+  "maximum_beats": 2147483647.0,
+  "offset": 0,
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:0:0x0.0p+0:000000009a99593f000000000000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 8.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:000000419a99593f00000000000000020000000000000000000000000000803f"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "0a3752c3db5c42208b86a880e59a9ad9",
+  "request_id": "fe551da1691241e995eaadaf62357a75",
+  "protocol": 2,
+  "completed_at": 1795197723.978967,
+  "action": "native.readAutomationPoints",
+  "client_pid": 41976
+ },
+ "add_preview": {
+  "success": true,
+  "submitted": false,
+  "dry_run": true,
+  "mode": "insert",
+  "index": 1,
+  "count_before": 2,
+  "native_request_id": "3a312a1195ba462b87e1b2be4aee5576",
+  "request_id": "5127b02fb250415492c721bcbb3438eb",
+  "protocol": 2,
+  "completed_at": 1795197724.1676726,
+  "action": "native.editAutomationPoints",
+  "client_pid": 41976
+ },
+ "added": {
+  "success": true,
+  "submitted": true,
+  "verified": true,
+  "request_id": "693d1201225b4daba9964acd1c32b592",
+  "context": "<pid>:<session>:<revision>",
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:0:0x0.0p+0:000000009a99593f000000000000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 4.0,
+    "value": 0.4000000059604645,
+    "tension": 0.20000000298023224,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:00008040cdcccc3ecdcc4c3e000000013e956d411eec893dabd630400000003f"
+   },
+   {
+    "index": 2,
+    "time_beats": 8.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:2:0x1.0000000000000p+2:000080409a99593f00000000000000020000000000000000000000000000803f"
+   }
+  ]
+ },
+ "stale_array": {
+  "success": false,
+  "submitted": false,
+  "error": "Automation source changed",
+  "native_request_id": null,
+  "request_id": "f5cafcc8dd384ef0a16b7ef1c1eb88db",
+  "protocol": 2,
+  "completed_at": 1795197724.533874,
+  "action": "native.editAutomationPoints",
+  "client_pid": 27088
+ },
+ "moved": {
+  "success": true,
+  "submitted": true,
+  "verified": true,
+  "request_id": "77e4d422010b4e93a4840f9eaab90168",
+  "context": "<pid>:<session>:<revision>",
+  "observed": [
+   {
+    "index": 1,
+    "time_beats": 5.0,
+    "value": 0.4000000059604645,
+    "tension": 0.20000000298023224,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:0000a040cdcccc3ecdcc4c3e000000013e956d411eec893dabd630400000203f"
+   },
+   {
+    "index": 2,
+    "time_beats": 8.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:2:0x1.4000000000000p+2:000040409a99593f00000000000000020000000000000000000000000000803f"
+   }
+  ]
+ },
+ "crossed": {
+  "success": false,
+  "submitted": false,
+  "error": "Position would move or cross the next point",
+  "native_request_id": "99ce858b7d1340d8a722730b22b3915f",
+  "request_id": "ee89f7c6885446dfb237c72d75935e07",
+  "protocol": 2,
+  "completed_at": 1795197725.144137,
+  "action": "native.moveAutomationPoint",
+  "client_pid": 41976
+ },
+ "endpoint": {
+  "success": false,
+  "submitted": false,
+  "error": "Point changed or is a protected endpoint"
+ },
+ "deleted": {
+  "success": true,
+  "submitted": true,
+  "verified": true,
+  "request_id": "e070446876c94418abc5e7037d0af777",
+  "context": "<pid>:<session>:<revision>",
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:0:0x0.0p+0:000000009a99593f000000000000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 8.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:000000419a99593f00000000000000020000000000000000000000000000803f"
+   }
+  ]
+ },
+ "delete_undo": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "channel": 8,
+  "source_event": 524288,
+  "count": 3,
+  "maximum_beats": 2147483647.0,
+  "offset": 0,
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:0:0x0.0p+0:000000009a99593f000000000000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 4.0,
+    "value": 0.4000000059604645,
+    "tension": 0.20000000298023224,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:00008040cdcccc3ecdcc4c3e000000013e956d411eec893dabd630400000003f"
+   },
+   {
+    "index": 2,
+    "time_beats": 8.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:2:0x1.0000000000000p+2:000080409a99593f00000000000000020000000000000000000000000000803f"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "4deac9b8dbe448d7adb5263c992877be",
+  "request_id": "065316ab24184b9580d2d1f8b15dd7c3",
+  "protocol": 2,
+  "completed_at": 1795197725.9234407,
+  "action": "native.readAutomationPoints",
+  "client_pid": 41976
+ },
+ "add_undo": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "channel": 8,
+  "source_event": 524288,
+  "count": 2,
+  "maximum_beats": 2147483647.0,
+  "offset": 0,
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:0:0x0.0p+0:000000009a99593f000000000000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 8.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:000000419a99593f0000000000000002000000001eec893dabd630400000803f"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "e46ab23f85ad4609a926d7d1d9f03908",
+  "request_id": "669b3aa856c44369b5d637323525484d",
+  "protocol": 2,
+  "completed_at": 1795197726.115307,
+  "action": "native.readAutomationPoints",
+  "client_pid": 41976
+ }
+}

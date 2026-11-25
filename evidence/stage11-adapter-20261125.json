@@ -1,0 +1,32 @@
+{
+ "capabilities": {
+  "context": "<pid>:<session>:<revision>"
+ },
+ "fl_native": {
+  "success": true,
+  "plugin_name": "Fruity Delay 3",
+  "adapter": "fl-native-effect",
+  "state_bytes": 108,
+  "has_format_marker": false,
+  "error": null
+ },
+ "fl_native_caps": {
+  "parameters": "named-public + unnamed slots skipped on restore",
+  "state_read": true,
+  "state_clone": "factory FST skeleton + replaced event 213",
+  "preset_list": true,
+  "preset_load": "empty slot direct; occupied slot remove+load (irreversible)",
+  "wrapper_state_file": false,
+  "notes": "FL's own effect; state is a compact event-213 record."
+ },
+ "vst_load_FabFilter_Timeless_3": {
+  "error": "Multiple effect presets match. Select one with preset_path."
+ },
+ "vst_load_Serum_2": {
+  "error": "No matching Mixer effect preset was found in the Plugin Database"
+ },
+ "vst_load_Vital": {
+  "error": "No matching Mixer effect preset was found in the Plugin Database"
+ },
+ "outcome": "adapter classification complete"
+}

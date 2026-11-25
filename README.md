@@ -28,7 +28,7 @@ application, driven entirely by tool calls, with the caption track naming each s
 | Non-linear automation | curve dword is stored but the derived cache stays zero on this build | dense linear point shaping (`ease_in`/`out`/`in_out`/`exponential`) |
 
 Each claim above was measured in an isolated FL instance, not inferred. Details live
-in `SEMANTIC_NATIVE.md` and `NATIVE_BRIDGE.md`.
+in `SEMANTIC_NATIVE.md`, `NATIVE_BRIDGE.md` and the [verification records](evidence/README.md).
 
 ## Requirements
 
@@ -37,10 +37,15 @@ in `SEMANTIC_NATIVE.md` and `NATIVE_BRIDGE.md`.
 | FL Studio | **26.1.7.5654**, Windows x64 — offsets are calibrated to this build |
 | Python | the 3.12 runtime bundled with FL (`Shared/Python`) |
 | MIDI ports | **not required** — the bridge talks over a file-queue RPC, so no loopMIDI or IAC Driver |
-| Build tools | none, unless you want to recompile (then MSVC + CPython 3.12 headers) |
+| Build tools | none, unless you want to recompile (then MinGW-w64 `gcc`/`dlltool` + CPython 3.12 headers) |
 
 The extension refuses to load when the detected engine profile does not match, so a
-wrong FL version fails closed instead of writing to the wrong addresses.
+wrong FL version fails closed instead of writing to the wrong addresses. Writing
+operations carry a second gate: `mixer.insert_empty_slot`, `mixer.remove_effect`
+and `project.save_copy` each declare their function-entry, global-address, object
+layout and calling-convention evidence, checked before the handler runs and
+reported through `fl_list_capabilities()` under `native.dependencies`. An
+unverified dependency refuses the operation without touching FL memory.
 
 ## Install
 

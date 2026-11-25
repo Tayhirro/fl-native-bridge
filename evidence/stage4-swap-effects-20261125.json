@@ -1,0 +1,60 @@
+{
+ "before": {
+  "slot0_param0": 0.23,
+  "slot1_param1": 0.77,
+  "slot0_name": "Fruity Delay 3",
+  "slot1_name": "Hyper Chorus"
+ },
+ "dry_run": {
+  "success": true,
+  "submitted": false,
+  "a": {
+   "plugin": "Fruity Delay 3",
+   "bytes": 108,
+   "sha256": "52615ddbf9193bb56177b4a1ea197bc32c8266b9010e21eecb4b432d636502b8"
+  },
+  "b": {
+   "plugin": "Hyper Chorus",
+   "bytes": 52,
+   "sha256": "f0a6e3999a610c737451c44efc9f8de7c08d1323c1a5e945c3bf84fa100f65fb"
+  },
+  "error": null
+ },
+ "swap": {
+  "success": true,
+  "submitted": true,
+  "state_matched": true,
+  "a_after_sha256": "f0a6e3999a610c737451c44efc9f8de7c08d1323c1a5e945c3bf84fa100f65fb",
+  "b_after_sha256": "52615ddbf9193bb56177b4a1ea197bc32c8266b9010e21eecb4b432d636502b8",
+  "steps": [
+   {
+    "step": "remove_a",
+    "success": true
+   },
+   {
+    "step": "load_b_into_a",
+    "success": true,
+    "error": null
+   },
+   {
+    "step": "remove_b",
+    "success": true
+   },
+   {
+    "step": "load_a_into_b",
+    "success": true,
+    "error": null
+   }
+  ],
+  "error": null,
+  "note": "Slots swapped with complete state"
+ },
+ "after": {
+  "slot0_name": "Hyper Chorus",
+  "slot1_name": "Fruity Delay 3",
+  "slot0_param1": 0.77,
+  "slot1_param0": 0.23
+ },
+ "crossed": true,
+ "outcome": "swap test complete"
+}

@@ -1,0 +1,69 @@
+{
+ "capabilities": {
+  "context": "<pid>:<session>:<revision>",
+  "has_add_sampler": true,
+  "has_save_copy": true
+ },
+ "baseline": {
+  "channel_count": 1,
+  "target_path": "<user-home>\\AppData\\Local\\Temp\\flmcp-<run>\\FLMCP_READBACK_PROBE_<id>.wav"
+ },
+ "before": {
+  "success": true,
+  "sources": [],
+  "count": 0,
+  "context": "<pid>:<session>:<revision>"
+ },
+ "created": {
+  "success": false,
+  "submitted": true,
+  "state": "partial",
+  "index": 1,
+  "source_path": "<user-home>\\AppData\\Local\\Temp\\flmcp-<run>\\FLMCP_READBACK_PROBE_<id>.wav",
+  "source_path_verified": false,
+  "error": "Sampler created; FL sample source path cannot yet be independently read back"
+ },
+ "after": {
+  "success": true,
+  "sources": [
+   {
+    "channel_index": 1,
+    "channel_iid": 1,
+    "sample_path": "<user-home>\\AppData\\Local\\Temp\\flmcp-<run>\\FLMCP_READBACK_PROBE_<id>.wav"
+   }
+  ],
+  "count": 1,
+  "context": "<pid>:<session>:<revision>"
+ },
+ "matched": [
+  {
+   "channel_index": 1,
+   "channel_iid": 1,
+   "sample_path": "<user-home>\\AppData\\Local\\Temp\\flmcp-<run>\\FLMCP_READBACK_PROBE_<id>.wav"
+  }
+ ],
+ "new_paths": [
+  {
+   "channel_index": 1,
+   "channel_iid": 1,
+   "sample_path": "<user-home>\\AppData\\Local\\Temp\\flmcp-<run>\\FLMCP_READBACK_PROBE_<id>.wav"
+  }
+ ],
+ "undo": [
+  {
+   "step": 1,
+   "count": 2
+  },
+  {
+   "step": 2,
+   "count": 1
+  }
+ ],
+ "after_undo": {
+  "success": true,
+  "sources": [],
+  "count": 0,
+  "context": "<pid>:<session>:<revision>"
+ },
+ "outcome": "Sampler source path independently read back from FLP save-copy; unique file matched to the new channel index; undo removed it. Transport stopped throughout."
+}

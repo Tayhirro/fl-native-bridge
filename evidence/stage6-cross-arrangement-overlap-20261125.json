@@ -1,0 +1,76 @@
+{
+ "capabilities": {
+  "context": "<pid>:<session>:<revision>"
+ },
+ "pattern": {
+  "created": 2,
+  "count_before": 1
+ },
+ "arrangements_before": {
+  "count": 1,
+  "current": 0
+ },
+ "cross_arrangement": {
+  "insert_a1": true,
+  "insert_a2": true,
+  "a_count": 2,
+  "a_tracks": [
+   5,
+   7
+  ],
+  "add_b": {
+   "success": true,
+   "index": 1,
+   "name": "FLMCP Arrangement B",
+   "error": null
+  },
+  "b_initial_count": 0,
+  "insert_b1": true,
+  "b_count": 1,
+  "b_tracks": [
+   9
+  ],
+  "switch_back": {
+   "success": true,
+   "index": 0,
+   "current": 0,
+   "observed": 0,
+   "error": null
+  },
+  "a_count_after": 2,
+  "a_tracks_after": [
+   5,
+   7
+  ],
+  "switch_to_b": {
+   "success": true,
+   "current": 1,
+   "error": null
+  },
+  "b_count_again": 1,
+  "switch_back2": true,
+  "isolated": true
+ },
+ "overlap": {
+  "base_count": 2,
+  "dup1": true,
+  "dup2": true,
+  "after_count": 4,
+  "clips_at_same_position": 3,
+  "distinct_refs": true,
+  "refs_preview": [
+   "0000000000500250",
+   "0000000000500250",
+   "0000000000500250"
+  ],
+  "delete_one": {
+   "success": true,
+   "submitted": true,
+   "error": null
+  },
+  "count_after_delete": 3,
+  "remaining_at_position": 2,
+  "one_removed": true
+ },
+ "outcome": "cross-arrangement + overlap verification complete"
+}

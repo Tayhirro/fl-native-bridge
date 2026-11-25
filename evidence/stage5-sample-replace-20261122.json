@@ -1,0 +1,53 @@
+{
+ "success": true,
+ "submitted": true,
+ "state": "applied",
+ "index": 1,
+ "context": "<pid>:<session>:<revision>",
+ "channel_name": "FLMCP_REPLACE_BBB_7wav",
+ "previous_channel_name": "FLMCP_REPLACE_AAA_7wav",
+ "source_path": "<user-home>\\AppData\\Local\\Temp\\flmcp-<run>\\FLMCP_REPLACE_BBB_7wav.wav",
+ "native_request_id": "5e68508e05384394ac5026465d6c1dee",
+ "request_id": "6d0ccd4f79194905b370c2dc4bdf7701",
+ "protocol": 2,
+ "completed_at": 1795363141.716009,
+ "action": "native.replaceSample",
+ "client_pid": 4736,
+ "channel": 1,
+ "previous_path": "<user-home>\\AppData\\Local\\Temp\\flmcp-<run>\\FLMCP_REPLACE_AAA_7wav.wav",
+ "new_path": "<user-home>\\AppData\\Local\\Temp\\flmcp-<run>\\FLMCP_REPLACE_BBB_7wav.wav",
+ "source_verified": true,
+ "other_sources_unchanged": true,
+ "replaced": {
+  "success": true,
+  "submitted": true,
+  "state": "applied",
+  "previous_path": "<user-home>\\AppData\\Local\\Temp\\flmcp-<run>\\FLMCP_REPLACE_AAA_7wav.wav",
+  "new_path": "<user-home>\\AppData\\Local\\Temp\\flmcp-<run>\\FLMCP_REPLACE_BBB_7wav.wav",
+  "source_verified": true,
+  "other_sources_unchanged": true,
+  "error": null
+ },
+ "after_sources": {
+  "success": true,
+  "sources": [
+   {
+    "channel_index": 1,
+    "channel_iid": 1,
+    "sample_path": "<user-home>\\AppData\\Local\\Temp\\flmcp-<run>\\FLMCP_REPLACE_BBB_7wav.wav"
+   }
+  ],
+  "count": 1,
+  "context": "<pid>:<session>:<revision>"
+ },
+ "undo_reports": [
+  {
+   "step": 1,
+   "success": true,
+   "path": "<user-home>\\AppData\\Local\\Temp\\flmcp-<run>\\FLMCP_REPLACE_AAA_7wav.wav"
+  }
+ ],
+ "undo_restored_path": "<user-home>\\AppData\\Local\\Temp\\flmcp-<run>\\FLMCP_REPLACE_AAA_7wav.wav",
+ "undoable": true,
+ "outcome": "fl_replace_sampler_sample verified (dry run, non-sampler rejection, commit, independent path readback, neighbour guard); undo restoration confirmed"
+}

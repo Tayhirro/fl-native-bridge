@@ -1,0 +1,48 @@
+{
+ "empty": [
+  5,
+  8,
+  9,
+  10,
+  11,
+  12
+ ],
+ "load": {
+  "track": 5,
+  "slot": 0,
+  "submitted": true,
+  "plugin_name": "Fruity Balance",
+  "success": true,
+  "verified": true
+ },
+ "name": "\u5e73\u8861",
+ "before": 0.5,
+ "write": {
+  "name": "\u5e73\u8861",
+  "value": 0.30078125,
+  "value_string": "40% \u5de6",
+  "verified": true,
+  "success": true,
+  "request_id": "a790acb5a0bd4ccb9de9f8b3f33140df",
+  "protocol": 2,
+  "completed_at": 1795258036.6048357,
+  "action": "plugins.setParamValue",
+  "client_pid": 42188
+ },
+ "after": 0.30078125,
+ "write2": {
+  "name": "\u5e73\u8861",
+  "value": 0.69921875,
+  "value_string": "40% \u53f3",
+  "verified": true,
+  "success": true,
+  "request_id": "4c0de77acd0844668fcc817244406532",
+  "protocol": 2,
+  "completed_at": 1795258036.823381,
+  "action": "plugins.setParamValue",
+  "client_pid": 42188
+ },
+ "after2": 0.69921875,
+ "verified": true,
+ "outcome": "controller mixer parameter writes verified"
+}

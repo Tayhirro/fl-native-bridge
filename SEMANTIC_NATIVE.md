@@ -180,9 +180,10 @@ state and unnamed VST wrapper slots are not copied — use
 `fl_read_mixer_effect_state` to compare the complete event-213 records.
 Verified on isolated FL: Fruity Balance with a distinctive knob value cloned to
 an empty slot, both named parameters matched on independent readback. Evidence:
-`evidence/stage4-clone-effect-20261125.json`. True full-state cloning remains
-limited because FL 26 has no public state-export and hand-synthesised FST files
-are rejected by the loader.
+`evidence/stage4-clone-effect-20261125.json`. True full-state cloning needs the
+full-state route below: FL 26 has no public state-export API, and an FST built
+from scratch (rather than from FL's own factory skeleton) is rejected by the
+loader.
 
 ## Full-state Mixer effect cloning and slot swap
 
@@ -198,8 +199,10 @@ writable user `Presets/Plugin database/Effects` folder (the loader only accepts
 presets from a Plugin Database) and deleted afterwards. Verified on isolated FL
 26.1.7.5654 with Fruity Delay 3 (26 parameters, 108-byte record): source and
 target digests were identical and five distinct parameter values matched exactly.
-This also disproves the reference implementation's note that hand-synthesised FST
-files are always rejected — a native skeleton with a replaced 213 record loads.
+The loader accepts this specific construction — FL's own factory skeleton with
+only its event-213 record replaced. It does **not** accept an FST assembled from
+scratch; the verified claim is limited to skeleton replacement, not to arbitrary
+synthetic presets.
 
 `fl_swap_mixer_effects(track, slot_a, slot_b, dry_run)` swaps two FX slots with
 their complete state: capture both records, remove each plugin, reload it into
@@ -225,10 +228,10 @@ hold identical state, but does not itself generate a loadable FST.
 
 The parser was verified against real FL 26.1.7.5654 project files: a save with
 Fruity Balance at track 3 slot 7 yielded a 222-byte state record at exactly
-`(3, 7)`, while a baseline save with no effects yielded none. Full-state
-cloning remains limited: FL 26 has no public state-export/getChunk API, the
-reference implementation saves state only through a save-copy + event-213
-read, and hand-synthesised `.fst` files are rejected — only FL-saved FSTs load.
+`(3, 7)`, while a baseline save with no effects yielded none. FL 26 has no
+public state-export/getChunk API, so the read side relies on a save-copy plus
+event-213 scan. On the write side, only the factory-skeleton replacement
+described above is known to load; an FST assembled from scratch is rejected.
 Parameter-level cloning (`fl_capture_plugin_parameter_state` /
 `fl_restore_plugin_parameter_state`) stays available but covers named public
 parameters only; VSTs with unnamed slots (e.g. Addictive Drums 2) lose state.

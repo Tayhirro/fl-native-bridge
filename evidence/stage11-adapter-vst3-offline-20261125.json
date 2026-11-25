@@ -1,0 +1,8 @@
+{
+ "source": "exact-slot-live-by92hagg/effect-at-3-8.flp (3,7)",
+ "state_bytes": 222,
+ "adapter": "vst3-wrapper",
+ "has_format_marker": true,
+ "wrapper_state_file": true,
+ "plugin_name": "FabFilter Timeless 3"
+}

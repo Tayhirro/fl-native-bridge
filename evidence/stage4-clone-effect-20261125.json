@@ -1,0 +1,39 @@
+{
+ "source_loaded": {
+  "success": true,
+  "error": null
+ },
+ "source_identity": {
+  "index": 3,
+  "slot": 0,
+  "plugin_name": "Fruity Balance",
+  "parameter_count": 2
+ },
+ "source_params": [
+  {
+   "index": 0,
+   "name": "\u5e73\u8861",
+   "value": 0.37109375
+  },
+  {
+   "index": 1,
+   "name": "\u97f3\u91cf",
+   "value": 0.8
+  }
+ ],
+ "clone_result": {
+  "success": true,
+  "submitted": true,
+  "error": null,
+  "named_parameters": 2,
+  "skipped_unnamed": 0
+ },
+ "writeback": {
+  "success": true,
+  "changed_count": 1,
+  "verified_readback": true,
+  "skipped_unnamed": 0
+ },
+ "target_matches_source": true,
+ "outcome": "mixer effect clone acceptance complete"
+}

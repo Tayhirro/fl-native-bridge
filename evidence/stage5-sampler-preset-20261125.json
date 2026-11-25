@@ -1,0 +1,47 @@
+{
+ "capabilities": {
+  "context": "<pid>:<session>:<revision>"
+ },
+ "sampler": {
+  "success": true,
+  "submitted": true,
+  "state": "verified",
+  "index": 1,
+  "source_path_verified": true,
+  "source_path_readback": "<user-home>\\AppData\\Local\\Temp\\flmcp-<run>\\TONE_PROBE_440_v3.wav",
+  "source_path_readback_error": null,
+  "channel_verified": true,
+  "error": "Sampler created; FL sample source path cannot yet be independently read back"
+ },
+ "presets": {
+  "success": true,
+  "count": 10,
+  "first": [
+   "Bandpass.fst",
+   "Chorus.fst",
+   "Default.fst",
+   "Diffused.fst",
+   "Mono.fst",
+   "Ping pong.fst"
+  ],
+  "error": null
+ },
+ "load_empty": {
+  "success": true,
+  "submitted": true,
+  "replaced": false,
+  "preset_name": "Bandpass",
+  "preset": "D:\\fl-2026\\\u65b0\u5efa\u6587\u4ef6\u5939\\Data\\Patches\\Plugin presets\\Effects\\Fruity Delay 3\\Bandpass.fst",
+  "error": null
+ },
+ "load_occupied": {
+  "success": true,
+  "submitted": true,
+  "replaced": true,
+  "irreversible": true,
+  "preset_name": "Chorus",
+  "error": null
+ },
+ "state_changed": true,
+ "outcome": "sampler + preset acceptance complete"
+}

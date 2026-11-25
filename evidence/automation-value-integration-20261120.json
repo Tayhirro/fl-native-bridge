@@ -1,0 +1,972 @@
+{
+ "preview": {
+  "success": true,
+  "submitted": false,
+  "dry_run": true,
+  "arrangement": 0,
+  "index": 5,
+  "context": "<pid>:<session>:<revision>",
+  "before": {
+   "start_tick": 1536,
+   "track": 6
+  },
+  "after": {
+   "start_tick": 1537,
+   "track": 6
+  },
+  "native_request_id": "02eec51cdbe94447aa2635349ecfd44c",
+  "request_id": "10fed7c6a367427aa57e2966e6c5dc3d",
+  "protocol": 2,
+  "completed_at": 1795164753.5872622,
+  "action": "native.movePlaylistClip",
+  "client_pid": 51604
+ },
+ "auto_before": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "channel": 8,
+  "source_event": 524288,
+  "count": 2,
+  "maximum_beats": 2147483647.0,
+  "offset": 0,
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:0:0x0.0p+0:000000009a99593f000000000000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 8.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:000000419a99593f00000000000000020000000000000000000000000000803f"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "9958135a3a5747e48972d7fea3b1e436",
+  "request_id": "833d609bda654a69a282d8d0207daffc",
+  "protocol": 2,
+  "completed_at": 1795164754.5557368,
+  "action": "native.readAutomationPoints",
+  "client_pid": 51604
+ },
+ "auto_preview": {
+  "success": true,
+  "submitted": false,
+  "dry_run": true,
+  "unchanged": false,
+  "before": 0.8500000238418579,
+  "after": 0.6499999761581421,
+  "native_request_id": "edcdbb30765148408fb4a396afb85a1a",
+  "request_id": "127d046af6db40b1ab3b2b4fe2ba68a5",
+  "protocol": 2,
+  "completed_at": 1795164754.737212,
+  "action": "native.setAutomationPointValue",
+  "client_pid": 51604
+ },
+ "auto_edit": {
+  "success": true,
+  "submitted": true,
+  "verified": true,
+  "request_id": "62b03a2a9e5e40a7b534fedff6c33699",
+  "context": "<pid>:<session>:<revision>",
+  "observed": {
+   "index": 0,
+   "time_beats": 0.0,
+   "value": 0.6499999761581421,
+   "tension": 0.0,
+   "curve": 0,
+   "snapshot_ref": "<pid>:<session>:<revision>:8:524288:0:0x0.0p+0:000000006666263f000000000000000000000000000000000000000000000000"
+  }
+ },
+ "auto_stale": {
+  "success": false,
+  "submitted": false,
+  "error": "Automation point changed; read it again",
+  "native_request_id": "626acf48b3b54d6e8e9b74a3b9c6d53f",
+  "request_id": "e10c6be0e14d415bb941328c2634c071",
+  "protocol": 2,
+  "completed_at": 1795164755.102873,
+  "action": "native.setAutomationPointValue",
+  "client_pid": 51604
+ },
+ "auto_restored": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "channel": 8,
+  "source_event": 524288,
+  "count": 2,
+  "maximum_beats": 2147483647.0,
+  "offset": 0,
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:0:0x0.0p+0:000000009a99593f000000000000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 8.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:000000419a99593f00000000000000020000000000000000000000000000803f"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "7dfdc9ef995c43998676c09efa268917",
+  "request_id": "ede6a689fdd94816a839c1544d8d50c8",
+  "protocol": 2,
+  "completed_at": 1795164755.4190488,
+  "action": "native.readAutomationPoints",
+  "client_pid": 51604
+ },
+ "second_edit": {
+  "success": true,
+  "submitted": true,
+  "verified": true,
+  "request_id": "9bdcaff2db3e445f8f0b228e28b7b571",
+  "context": "<pid>:<session>:<revision>",
+  "observed": {
+   "index": 1,
+   "time_beats": 8.0,
+   "value": 0.30000001192092896,
+   "tension": 0.0,
+   "curve": 0,
+   "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:000000419a99993e00000000000000020000000000000000000000000000803f"
+  }
+ },
+ "second_restored": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "channel": 8,
+  "source_event": 524288,
+  "count": 2,
+  "maximum_beats": 2147483647.0,
+  "offset": 0,
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:0:0x0.0p+0:000000009a99593f000000000000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 8.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:000000419a99593f00000000000000020000000000000000000000000000803f"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "bcb1827cdce74826a930e9fbf60a0bcd",
+  "request_id": "46147c8da51a4c56b27119b980348ea6",
+  "protocol": 2,
+  "completed_at": 1795164755.913016,
+  "action": "native.readAutomationPoints",
+  "client_pid": 51604
+ },
+ "other_before": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "channel": 12,
+  "source_event": 786432,
+  "count": 2,
+  "maximum_beats": 2147483647.0,
+  "offset": 0,
+  "points": [
+   {
+    "index": 0,
+    "time_beats": 0.0,
+    "value": 0.5,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:12:786432:0:0x0.0p+0:000000000000003f000000000000000000000000000000000000000000000000"
+   },
+   {
+    "index": 1,
+    "time_beats": 8.0,
+    "value": 0.5,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:12:786432:1:0x0.0p+0:000000410000003f00000000000000020000000000000000000000000000803f"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "70c0002dc39b48929b5857ad18a4ce0f",
+  "request_id": "f65c8df1cf124d9c92ffb2bf1affd71b",
+  "protocol": 2,
+  "completed_at": 1795164754.6776605,
+  "action": "native.readAutomationPoints",
+  "client_pid": 51604
+ },
+ "capabilities": {
+  "context": "<pid>:<session>:<revision>",
+  "native": {
+   "api_version": 1,
+   "engine_profile": "26.1.7.5654-x64",
+   "operations": [
+    "mixer.insert_empty_slot",
+    "playlist.read_clips",
+    "playlist.move_clip",
+    "automation.read_points",
+    "automation.set_point_value"
+   ],
+   "available": true,
+   "engine_path": "D:\\fl-2026\\\u65b0\u5efa\u6587\u4ef6\u5939\\FLEngine_x64.dll"
+  },
+  "capability_request_id": "e71798409698467c8103fa050dff23d0",
+  "success": true,
+  "request_id": "2ec78eaa890b424ba91b588c88bf07f6",
+  "protocol": 2,
+  "completed_at": 1795164753.3449805,
+  "action": "native.semanticDescribe",
+  "client_pid": 51604
+ },
+ "before": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "arrangement": 0,
+  "count": 26,
+  "offset": 0,
+  "clips": [
+   {
+    "index": 0,
+    "track": 1,
+    "start_tick": 0,
+    "length_tick": 384,
+    "source_type": "pattern",
+    "source_index": 8,
+    "source_raw": 1342722048,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:0:000000000050085080010000f30111007800402040648080ffffffffffffffff01000000"
+   },
+   {
+    "index": 1,
+    "track": 7,
+    "start_tick": 0,
+    "length_tick": 768,
+    "source_type": "channel",
+    "source_index": 8,
+    "source_raw": 544768,
+    "muted": false,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:1:000000000050080000030000ed0100007800400040648080000000000000004102000000"
+   },
+   {
+    "index": 2,
+    "track": 8,
+    "start_tick": 0,
+    "length_tick": 768,
+    "source_type": "channel",
+    "source_index": 12,
+    "source_raw": 806912,
+    "muted": false,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:2:0000000000500c0000030000ec0100007800400040648080000000000000004103000000"
+   },
+   {
+    "index": 3,
+    "track": 5,
+    "start_tick": 0,
+    "length_tick": 1536,
+    "source_type": "pattern",
+    "source_index": 3,
+    "source_raw": 1342394368,
+    "muted": false,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:3:000000000050035000060000ef0103007800400040648080ffffffffffffffff04000000"
+   },
+   {
+    "index": 4,
+    "track": 2,
+    "start_tick": 0,
+    "length_tick": 384,
+    "source_type": "pattern",
+    "source_index": 13,
+    "source_raw": 1343049728,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:4:0000000000500d5080010000f20112007800402040648080ffffffffffffffff05000000"
+   },
+   {
+    "index": 5,
+    "track": 6,
+    "start_tick": 1536,
+    "length_tick": 1536,
+    "source_type": "channel",
+    "source_index": 16,
+    "source_raw": 1069056,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:5:000600000050100000060000ee010200780040204064808000000000dcc4e64506000000"
+   },
+   {
+    "index": 6,
+    "track": 5,
+    "start_tick": 1536,
+    "length_tick": 1536,
+    "source_type": "pattern",
+    "source_index": 3,
+    "source_raw": 1342394368,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:6:000600000050035000060000ef0100007800402040648080ffffffffffffffff07000000"
+   },
+   {
+    "index": 7,
+    "track": 4,
+    "start_tick": 1536,
+    "length_tick": 1536,
+    "source_type": "pattern",
+    "source_index": 1,
+    "source_raw": 1342263296,
+    "muted": false,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:7:000600000050015000060000f00106007800400040648080ffffffffffffffff08000000"
+   },
+   {
+    "index": 8,
+    "track": 3,
+    "start_tick": 1536,
+    "length_tick": 1536,
+    "source_type": "pattern",
+    "source_index": 5,
+    "source_raw": 1342525440,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:8:000600000050055000060000f10105007800402040648080ffffffffffffffff09000000"
+   },
+   {
+    "index": 9,
+    "track": 8,
+    "start_tick": 1536,
+    "length_tick": 768,
+    "source_type": "channel",
+    "source_index": 13,
+    "source_raw": 872448,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:9:0006000000500d0000030000ec010000780040204064808000000000000000410a000000"
+   },
+   {
+    "index": 10,
+    "track": 7,
+    "start_tick": 1536,
+    "length_tick": 768,
+    "source_type": "channel",
+    "source_index": 5,
+    "source_raw": 348160,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:10:000600000050050000030000ed010000780040204064808000000000000000410b000000"
+   },
+   {
+    "index": 11,
+    "track": 2,
+    "start_tick": 1536,
+    "length_tick": 384,
+    "source_type": "pattern",
+    "source_index": 14,
+    "source_raw": 1343115264,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:11:0006000000500e5080010000f20113007800402040648080ffffffffffffffff0c000000"
+   },
+   {
+    "index": 12,
+    "track": 1,
+    "start_tick": 1536,
+    "length_tick": 384,
+    "source_type": "pattern",
+    "source_index": 7,
+    "source_raw": 1342656512,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:12:000600000050075080010000f30100007800402040648080ffffffffffffffff0d000000"
+   },
+   {
+    "index": 13,
+    "track": 1,
+    "start_tick": 3072,
+    "length_tick": 384,
+    "source_type": "pattern",
+    "source_index": 9,
+    "source_raw": 1342787584,
+    "muted": false,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:13:000c00000050095080010000f30114007800400040648080ffffffffffffffff0e000000"
+   },
+   {
+    "index": 14,
+    "track": 2,
+    "start_tick": 3072,
+    "length_tick": 384,
+    "source_type": "pattern",
+    "source_index": 13,
+    "source_raw": 1343049728,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:14:000c000000500d5080010000f20116007800402040648080ffffffffffffffff0f000000"
+   },
+   {
+    "index": 15,
+    "track": 5,
+    "start_tick": 3072,
+    "length_tick": 1536,
+    "source_type": "pattern",
+    "source_index": 4,
+    "source_raw": 1342459904,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:15:000c00000050045000060000ef0101007800402040648080ffffffffffffffff10000000"
+   },
+   {
+    "index": 16,
+    "track": 7,
+    "start_tick": 3072,
+    "length_tick": 768,
+    "source_type": "channel",
+    "source_index": 6,
+    "source_raw": 413696,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:16:000c00000050060000030000ed0100007800402040648080000000000000004111000000"
+   },
+   {
+    "index": 17,
+    "track": 8,
+    "start_tick": 3072,
+    "length_tick": 768,
+    "source_type": "channel",
+    "source_index": 14,
+    "source_raw": 937984,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:17:000c000000500e0000030000ec0100007800402040648080000000000000004112000000"
+   },
+   {
+    "index": 18,
+    "track": 8,
+    "start_tick": 4608,
+    "length_tick": 768,
+    "source_type": "channel",
+    "source_index": 15,
+    "source_raw": 1003520,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:18:0012000000500f0000030000ec0100007800402040648080000000000000004113000000"
+   },
+   {
+    "index": 19,
+    "track": 7,
+    "start_tick": 4608,
+    "length_tick": 768,
+    "source_type": "channel",
+    "source_index": 7,
+    "source_raw": 479232,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:19:001200000050070000030000ed0100007800402040648080000000000000004114000000"
+   },
+   {
+    "index": 20,
+    "track": 1,
+    "start_tick": 4608,
+    "length_tick": 384,
+    "source_type": "pattern",
+    "source_index": 9,
+    "source_raw": 1342787584,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:20:001200000050095080010000f30117007800402040648080ffffffffffffffff15000000"
+   },
+   {
+    "index": 21,
+    "track": 2,
+    "start_tick": 4608,
+    "length_tick": 384,
+    "source_type": "pattern",
+    "source_index": 14,
+    "source_raw": 1343115264,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:21:0012000000500e5080010000f20118007800402040648080ffffffffffffffff16000000"
+   },
+   {
+    "index": 22,
+    "track": 5,
+    "start_tick": 4608,
+    "length_tick": 1536,
+    "source_type": "pattern",
+    "source_index": 4,
+    "source_raw": 1342459904,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:22:001200000050045000060000ef0100007800402040648080ffffffffffffffff17000000"
+   },
+   {
+    "index": 23,
+    "track": 6,
+    "start_tick": 4608,
+    "length_tick": 1536,
+    "source_type": "channel",
+    "source_index": 16,
+    "source_raw": 1069056,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:23:001200000050100000060000ee010400780040204064808000000000d8c4e64518000000"
+   },
+   {
+    "index": 24,
+    "track": 4,
+    "start_tick": 4608,
+    "length_tick": 1536,
+    "source_type": "pattern",
+    "source_index": 2,
+    "source_raw": 1342328832,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:24:001200000050025000060000f00107007800402040648080ffffffffffffffff19000000"
+   },
+   {
+    "index": 25,
+    "track": 3,
+    "start_tick": 4608,
+    "length_tick": 1536,
+    "source_type": "pattern",
+    "source_index": 6,
+    "source_raw": 1342590976,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:25:001200000050065000060000f10108007800402040648080ffffffffffffffff1a000000"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "73f29c82335a4c8ebd60583ecc110c0c",
+  "request_id": "06a58ffc91ba464d838958193ea156dd",
+  "protocol": 2,
+  "completed_at": 1795164753.4648285,
+  "action": "native.listPlaylistClips",
+  "client_pid": 51604
+ },
+ "moved": {
+  "success": true,
+  "submitted": true,
+  "verified": true,
+  "request_id": "c8c9e7cc46e644d781f8dfdbb2466cd5",
+  "context": "<pid>:<session>:<revision>",
+  "observed": {
+   "index": 5,
+   "track": 6,
+   "start_tick": 1537,
+   "length_tick": 1536,
+   "source_type": "channel",
+   "source_index": 16,
+   "source_raw": 1069056,
+   "muted": true,
+   "snapshot_ref": "<pid>:<session>:<revision>:0:5:010600000050100000060000ee010200780040204064808000000000dcc4e64506000000"
+  }
+ },
+ "stale": {
+  "success": false,
+  "submitted": false,
+  "error": "The Playlist clip changed; read it again",
+  "native_request_id": "bb3ed736a18846b499b0c2dc99439cc6",
+  "request_id": "d881c4802ed848dc8c77a08f6dfa92dc",
+  "protocol": 2,
+  "completed_at": 1795164754.0009828,
+  "action": "native.movePlaylistClip",
+  "client_pid": 51604
+ },
+ "restored": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "arrangement": 0,
+  "count": 26,
+  "offset": 0,
+  "clips": [
+   {
+    "index": 0,
+    "track": 1,
+    "start_tick": 0,
+    "length_tick": 384,
+    "source_type": "pattern",
+    "source_index": 8,
+    "source_raw": 1342722048,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:0:000000000050085080010000f30111007800402040648080ffffffffffffffff01000000"
+   },
+   {
+    "index": 1,
+    "track": 7,
+    "start_tick": 0,
+    "length_tick": 768,
+    "source_type": "channel",
+    "source_index": 8,
+    "source_raw": 544768,
+    "muted": false,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:1:000000000050080000030000ed0100007800400040648080000000000000004102000000"
+   },
+   {
+    "index": 2,
+    "track": 8,
+    "start_tick": 0,
+    "length_tick": 768,
+    "source_type": "channel",
+    "source_index": 12,
+    "source_raw": 806912,
+    "muted": false,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:2:0000000000500c0000030000ec0100007800400040648080000000000000004103000000"
+   },
+   {
+    "index": 3,
+    "track": 5,
+    "start_tick": 0,
+    "length_tick": 1536,
+    "source_type": "pattern",
+    "source_index": 3,
+    "source_raw": 1342394368,
+    "muted": false,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:3:000000000050035000060000ef0103007800400040648080ffffffffffffffff04000000"
+   },
+   {
+    "index": 4,
+    "track": 2,
+    "start_tick": 0,
+    "length_tick": 384,
+    "source_type": "pattern",
+    "source_index": 13,
+    "source_raw": 1343049728,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:4:0000000000500d5080010000f20112007800402040648080ffffffffffffffff05000000"
+   },
+   {
+    "index": 5,
+    "track": 6,
+    "start_tick": 1536,
+    "length_tick": 1536,
+    "source_type": "channel",
+    "source_index": 16,
+    "source_raw": 1069056,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:5:000600000050100000060000ee010200780040204064808000000000dcc4e64506000000"
+   },
+   {
+    "index": 6,
+    "track": 5,
+    "start_tick": 1536,
+    "length_tick": 1536,
+    "source_type": "pattern",
+    "source_index": 3,
+    "source_raw": 1342394368,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:6:000600000050035000060000ef0100007800402040648080ffffffffffffffff07000000"
+   },
+   {
+    "index": 7,
+    "track": 4,
+    "start_tick": 1536,
+    "length_tick": 1536,
+    "source_type": "pattern",
+    "source_index": 1,
+    "source_raw": 1342263296,
+    "muted": false,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:7:000600000050015000060000f00106007800400040648080ffffffffffffffff08000000"
+   },
+   {
+    "index": 8,
+    "track": 3,
+    "start_tick": 1536,
+    "length_tick": 1536,
+    "source_type": "pattern",
+    "source_index": 5,
+    "source_raw": 1342525440,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:8:000600000050055000060000f10105007800402040648080ffffffffffffffff09000000"
+   },
+   {
+    "index": 9,
+    "track": 8,
+    "start_tick": 1536,
+    "length_tick": 768,
+    "source_type": "channel",
+    "source_index": 13,
+    "source_raw": 872448,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:9:0006000000500d0000030000ec010000780040204064808000000000000000410a000000"
+   },
+   {
+    "index": 10,
+    "track": 7,
+    "start_tick": 1536,
+    "length_tick": 768,
+    "source_type": "channel",
+    "source_index": 5,
+    "source_raw": 348160,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:10:000600000050050000030000ed010000780040204064808000000000000000410b000000"
+   },
+   {
+    "index": 11,
+    "track": 2,
+    "start_tick": 1536,
+    "length_tick": 384,
+    "source_type": "pattern",
+    "source_index": 14,
+    "source_raw": 1343115264,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:11:0006000000500e5080010000f20113007800402040648080ffffffffffffffff0c000000"
+   },
+   {
+    "index": 12,
+    "track": 1,
+    "start_tick": 1536,
+    "length_tick": 384,
+    "source_type": "pattern",
+    "source_index": 7,
+    "source_raw": 1342656512,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:12:000600000050075080010000f30100007800402040648080ffffffffffffffff0d000000"
+   },
+   {
+    "index": 13,
+    "track": 1,
+    "start_tick": 3072,
+    "length_tick": 384,
+    "source_type": "pattern",
+    "source_index": 9,
+    "source_raw": 1342787584,
+    "muted": false,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:13:000c00000050095080010000f30114007800400040648080ffffffffffffffff0e000000"
+   },
+   {
+    "index": 14,
+    "track": 2,
+    "start_tick": 3072,
+    "length_tick": 384,
+    "source_type": "pattern",
+    "source_index": 13,
+    "source_raw": 1343049728,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:14:000c000000500d5080010000f20116007800402040648080ffffffffffffffff0f000000"
+   },
+   {
+    "index": 15,
+    "track": 5,
+    "start_tick": 3072,
+    "length_tick": 1536,
+    "source_type": "pattern",
+    "source_index": 4,
+    "source_raw": 1342459904,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:15:000c00000050045000060000ef0101007800402040648080ffffffffffffffff10000000"
+   },
+   {
+    "index": 16,
+    "track": 7,
+    "start_tick": 3072,
+    "length_tick": 768,
+    "source_type": "channel",
+    "source_index": 6,
+    "source_raw": 413696,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:16:000c00000050060000030000ed0100007800402040648080000000000000004111000000"
+   },
+   {
+    "index": 17,
+    "track": 8,
+    "start_tick": 3072,
+    "length_tick": 768,
+    "source_type": "channel",
+    "source_index": 14,
+    "source_raw": 937984,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:17:000c000000500e0000030000ec0100007800402040648080000000000000004112000000"
+   },
+   {
+    "index": 18,
+    "track": 8,
+    "start_tick": 4608,
+    "length_tick": 768,
+    "source_type": "channel",
+    "source_index": 15,
+    "source_raw": 1003520,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:18:0012000000500f0000030000ec0100007800402040648080000000000000004113000000"
+   },
+   {
+    "index": 19,
+    "track": 7,
+    "start_tick": 4608,
+    "length_tick": 768,
+    "source_type": "channel",
+    "source_index": 7,
+    "source_raw": 479232,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:19:001200000050070000030000ed0100007800402040648080000000000000004114000000"
+   },
+   {
+    "index": 20,
+    "track": 1,
+    "start_tick": 4608,
+    "length_tick": 384,
+    "source_type": "pattern",
+    "source_index": 9,
+    "source_raw": 1342787584,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:20:001200000050095080010000f30117007800402040648080ffffffffffffffff15000000"
+   },
+   {
+    "index": 21,
+    "track": 2,
+    "start_tick": 4608,
+    "length_tick": 384,
+    "source_type": "pattern",
+    "source_index": 14,
+    "source_raw": 1343115264,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:21:0012000000500e5080010000f20118007800402040648080ffffffffffffffff16000000"
+   },
+   {
+    "index": 22,
+    "track": 5,
+    "start_tick": 4608,
+    "length_tick": 1536,
+    "source_type": "pattern",
+    "source_index": 4,
+    "source_raw": 1342459904,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:22:001200000050045000060000ef0100007800402040648080ffffffffffffffff17000000"
+   },
+   {
+    "index": 23,
+    "track": 6,
+    "start_tick": 4608,
+    "length_tick": 1536,
+    "source_type": "channel",
+    "source_index": 16,
+    "source_raw": 1069056,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:23:001200000050100000060000ee010400780040204064808000000000d8c4e64518000000"
+   },
+   {
+    "index": 24,
+    "track": 4,
+    "start_tick": 4608,
+    "length_tick": 1536,
+    "source_type": "pattern",
+    "source_index": 2,
+    "source_raw": 1342328832,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:24:001200000050025000060000f00107007800402040648080ffffffffffffffff19000000"
+   },
+   {
+    "index": 25,
+    "track": 3,
+    "start_tick": 4608,
+    "length_tick": 1536,
+    "source_type": "pattern",
+    "source_index": 6,
+    "source_raw": 1342590976,
+    "muted": true,
+    "snapshot_ref": "<pid>:<session>:<revision>:0:25:001200000050065000060000f10108007800402040648080ffffffffffffffff1a000000"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "1696791620ee4ffcabd243019f8355e3",
+  "request_id": "09e697915e9749f29488d7fb2564b2ed",
+  "protocol": 2,
+  "completed_at": 1795164754.305783,
+  "action": "native.listPlaylistClips",
+  "client_pid": 51604
+ },
+ "automation": {
+  "success": true,
+  "context": "<pid>:<session>:<revision>",
+  "channel": 8,
+  "source_event": 524288,
+  "count": 2,
+  "maximum_beats": 2147483647.0,
+  "offset": 1,
+  "points": [
+   {
+    "index": 1,
+    "time_beats": 8.0,
+    "value": 0.8500000238418579,
+    "tension": 0.0,
+    "curve": 0,
+    "snapshot_ref": "<pid>:<session>:<revision>:8:524288:1:0x0.0p+0:000000419a99593f00000000000000020000000000000000000000000000803f"
+   }
+  ],
+  "next_offset": null,
+  "native_request_id": "2a2b1a12a43e4e7d8230ca75ab0bd97f",
+  "request_id": "8947d5c13e4c4476ac572d22cc5be510",
+  "protocol": 2,
+  "completed_at": 1795164754.4317343,
+  "action": "native.readAutomationPoints",
+  "client_pid": 51604
+ },
+ "audio_rejected": {
+  "success": false,
+  "submitted": false,
+  "error": "Channel is not a supported Automation Clip",
+  "native_request_id": "670a9e2b082441979bd3ceb202c167d3",
+  "request_id": "936eede36b134e1098f271ac4d6463e6",
+  "protocol": 2,
+  "completed_at": 1795164756.0373354,
+  "action": "native.readAutomationPoints",
+  "client_pid": 51604
+ },
+ "effect": {
+  "track": 3,
+  "slot": 7,
+  "submitted": true,
+  "plugin_name": "Fruity Balance",
+  "success": true,
+  "verified": true
+ },
+ "effect_after_undo": {
+  "module": "mixer",
+  "method": "isTrackPluginValid",
+  "read_only": true,
+  "result": 0,
+  "success": true,
+  "request_id": "74749bc21f384f578573b3d47bc93928",
+  "protocol": 2,
+  "completed_at": 1795164756.4305143,
+  "action": "native.call",
+  "client_pid": 22860
+ },
+ "ui": {
+  "version": "Producer Edition v26.1.7 [build 5654]",
+  "program_title": "FL Studio 2026",
+  "project_title": "Housework",
+  "changed": 1,
+  "safe_to_edit": true,
+  "focused_form_id": -1,
+  "focused_caption": "\u6b4c\u66f2\u4fe1\u606f",
+  "focused_plugin": "",
+  "windows": [
+   {
+    "id": 0,
+    "visible": false,
+    "focused": false
+   },
+   {
+    "id": 1,
+    "visible": false,
+    "focused": false
+   },
+   {
+    "id": 2,
+    "visible": true,
+    "focused": false
+   },
+   {
+    "id": 3,
+    "visible": false,
+    "focused": false
+   },
+   {
+    "id": 4,
+    "visible": true,
+    "focused": false
+   }
+  ],
+  "coverage": "Main form visibility/focus; no HWND geometry or clip contents",
+  "success": true,
+  "request_id": "8b1a6deff33f4b2fa46fcb5ef6b66f1e",
+  "protocol": 2,
+  "completed_at": 1795164756.489824,
+  "action": "native.uiSnapshot",
+  "client_pid": 22860
+ }
+}
