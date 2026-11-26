@@ -87,39 +87,39 @@ def register_channel_tools(mcp: FastMCP) -> None:
         return result.get("channel")
 
     @mcp.tool()
-    def fl_select_channel(index: int, select: bool = True) -> str:
+    def fl_select_channel(channel: int, select: bool = True) -> str:
         """Select or deselect a channel.
 
         Args:
-            index: Channel index (global)
+            channel: Channel channel (global)
             select: True to select, False to deselect
         """
         conn = get_connection()
         result = conn.send_command("channels.select", {
-            "index": index,
+            "index": channel,
             "select": select,
         })
 
         if not result.get("success", False) and "error" in result:
             return f"Error: {result['error']}"
 
-        channel_name = result.get("channel_name", f"Channel {index}")
+        channel_name = result.get("channel_name", f"Channel {channel}")
         return f"Channel '{channel_name}' {'selected' if select else 'deselected'}"
 
     @mcp.tool()
-    def fl_select_one_channel(index: int) -> str:
+    def fl_select_one_channel(channel: int) -> str:
         """Select only one channel, deselecting all others.
 
         Args:
-            index: Channel index (global) to select exclusively
+            channel: Channel channel (global) to select exclusively
         """
         conn = get_connection()
-        result = conn.send_command("channels.selectOne", {"index": index})
+        result = conn.send_command("channels.selectOne", {"index": channel})
 
         if not result.get("success", False) and "error" in result:
             return f"Error: {result['error']}"
 
-        channel_name = result.get("channel_name", f"Channel {index}")
+        channel_name = result.get("channel_name", f"Channel {channel}")
         return f"Channel '{channel_name}' selected exclusively"
 
     @mcp.tool()
@@ -168,11 +168,11 @@ def register_channel_tools(mcp: FastMCP) -> None:
         )
 
     @mcp.tool()
-    def fl_set_channel_volume(index: int, volume: float) -> str:
+    def fl_set_channel_volume(channel: int, volume: float) -> str:
         """Set the volume of a channel.
 
         Args:
-            index: Channel index (global)
+            channel: Channel channel (global)
             volume: Volume level from 0.0 (silence) to 1.0 (full)
         """
         if not 0.0 <= volume <= 1.0:
@@ -180,23 +180,23 @@ def register_channel_tools(mcp: FastMCP) -> None:
 
         conn = get_connection()
         result = conn.send_command("channels.setVolume", {
-            "index": index,
+            "index": channel,
             "volume": volume,
         })
 
         if not result.get("success", False) and "error" in result:
             return f"Error: {result['error']}"
 
-        channel_name = result.get("channel_name", f"Channel {index}")
+        channel_name = result.get("channel_name", f"Channel {channel}")
         new_volume = result.get("volume", volume)
         return f"Channel '{channel_name}' volume set to {new_volume:.2f}"
 
     @mcp.tool()
-    def fl_set_channel_pan(index: int, pan: float) -> str:
+    def fl_set_channel_pan(channel: int, pan: float) -> str:
         """Set the pan position of a channel.
 
         Args:
-            index: Channel index (global)
+            channel: Channel channel (global)
             pan: Pan from -1.0 (full left) to 1.0 (full right), 0.0 = center
         """
         if not -1.0 <= pan <= 1.0:
@@ -204,28 +204,28 @@ def register_channel_tools(mcp: FastMCP) -> None:
 
         conn = get_connection()
         result = conn.send_command("channels.setPan", {
-            "index": index,
+            "index": channel,
             "pan": pan,
         })
 
         if not result.get("success", False) and "error" in result:
             return f"Error: {result['error']}"
 
-        channel_name = result.get("channel_name", f"Channel {index}")
+        channel_name = result.get("channel_name", f"Channel {channel}")
         new_pan = result.get("pan", pan)
         return f"Channel '{channel_name}' pan set to {new_pan:.2f}"
 
     @mcp.tool()
-    def fl_mute_channel(index: int, muted: bool | None = None) -> str:
+    def fl_mute_channel(channel: int, muted: bool | None = None) -> str:
         """Mute or unmute a channel.
 
         Args:
-            index: Channel index (global)
+            channel: Channel channel (global)
             muted: True to mute, False to unmute, None to toggle
         """
         conn = get_connection()
         result = conn.send_command("channels.mute", {
-            "index": index,
+            "index": channel,
             "muted": muted,
         })
 
@@ -233,20 +233,20 @@ def register_channel_tools(mcp: FastMCP) -> None:
             return f"Error: {result['error']}"
 
         is_muted = result.get("is_muted", False)
-        channel_name = result.get("channel_name", f"Channel {index}")
+        channel_name = result.get("channel_name", f"Channel {channel}")
         return f"Channel '{channel_name}' {'muted' if is_muted else 'unmuted'}"
 
     @mcp.tool()
-    def fl_solo_channel(index: int, solo: bool | None = None) -> str:
+    def fl_solo_channel(channel: int, solo: bool | None = None) -> str:
         """Solo or unsolo a channel.
 
         Args:
-            index: Channel index (global)
+            channel: Channel channel (global)
             solo: True to solo, False to unsolo, None to toggle
         """
         conn = get_connection()
         result = conn.send_command("channels.solo", {
-            "index": index,
+            "index": channel,
             "solo": solo,
         })
 
@@ -254,41 +254,41 @@ def register_channel_tools(mcp: FastMCP) -> None:
             return f"Error: {result['error']}"
 
         is_solo = result.get("is_solo", False)
-        channel_name = result.get("channel_name", f"Channel {index}")
+        channel_name = result.get("channel_name", f"Channel {channel}")
         return f"Channel '{channel_name}' {'soloed' if is_solo else 'unsoloed'}"
 
     @mcp.tool()
-    def fl_set_channel_name(index: int, name: str) -> str:
+    def fl_set_channel_name(channel: int, name: str) -> str:
         """Set the name of a channel.
 
         Args:
-            index: Channel index (global)
+            channel: Channel channel (global)
             name: New name for the channel
         """
         conn = get_connection()
         result = conn.send_command("channels.setName", {
-            "index": index,
+            "index": channel,
             "name": name,
         })
 
         if not result.get("success", False) and "error" in result:
             return f"Error: {result['error']}"
 
-        return f"Channel {index} renamed to '{name}'"
+        return f"Channel {channel} renamed to '{name}'"
 
     @mcp.tool()
-    def fl_set_channel_color(index: int, red: int, green: int, blue: int) -> str:
+    def fl_set_channel_color(channel: int, red: int, green: int, blue: int) -> str:
         """Set the color of a channel.
 
         Args:
-            index: Channel index (global)
+            channel: Channel channel (global)
             red: Red component (0-255)
             green: Green component (0-255)
             blue: Blue component (0-255)
         """
         conn = get_connection()
         result = conn.send_command("channels.setColor", {
-            "index": index,
+            "index": channel,
             "r": red,
             "g": green,
             "b": blue,
@@ -297,26 +297,26 @@ def register_channel_tools(mcp: FastMCP) -> None:
         if not result.get("success", False) and "error" in result:
             return f"Error: {result['error']}"
 
-        return f"Channel {index} color set to RGB({red}, {green}, {blue})"
+        return f"Channel {channel} color set to RGB({red}, {green}, {blue})"
 
     @mcp.tool()
-    def fl_route_channel_to_mixer(channel_index: int, mixer_track: int) -> str:
+    def fl_route_channel_to_mixer(channel: int, mixer_track: int) -> str:
         """Route a channel to a specific mixer track.
 
         Args:
-            channel_index: Channel index (global)
-            mixer_track: Mixer track index to route to
+            channel: Channel channel (global)
+            mixer_track: Mixer track channel to route to
         """
         conn = get_connection()
         result = conn.send_command("channels.routeToMixer", {
-            "channel_index": channel_index,
+            "channel_index": channel,
             "mixer_track": mixer_track,
         })
 
         if not result.get("success", False) and "error" in result:
             return f"Error: {result['error']}"
 
-        channel_name = result.get("channel_name", f"Channel {channel_index}")
+        channel_name = result.get("channel_name", f"Channel {channel}")
         return f"Channel '{channel_name}' routed to mixer track {mixer_track}"
 
     # Step Sequencer Tools

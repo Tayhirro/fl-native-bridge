@@ -52,13 +52,22 @@ def test_no_near_duplicate_tool_names():
     assert not unexpected, f"near-duplicate tools registered: {unexpected}"
 
 
-def test_channel_info_parameter_name_matches_client_expectation():
-    """fl_get_channel_info must accept `channel` (the name every caller uses)."""
-    names = {t.name: t for t in asyncio.run(srv.mcp.list_tools())}
-    tool = names["fl_get_channel_info"]
-    props = tool.parameters.get("properties", {})
-    assert "channel" in props, (
-        "fl_get_channel_info still declares `index`; MCP clients naturally send "
-        "`channel`, which fails schema validation. Rename the parameter or add an "
-        "alias at the server layer."
-    )
+def test_channel_tools_use_consistent_parameter_name():
+    """Every tool named fl_*channel* must declare its channel index as `channel`.
+
+    Regression: 8 tools used `index` and one used `channel_index` while the
+    rest used `channel`. MCP clients infer the argument name from the tool
+    name, so they sent `channel` and Pydantic rejected the call before the
+    tool body ran (additionalProperties=false).
+    """
+    tools = asyncio.run(srv.mcp.list_tools())
+    offenders = {}
+    for tool in tools:
+        if "channel" not in tool.name.lower():
+            continue
+        props = tool.parameters.get("properties", {})
+        if not any(p in props for p in ("index", "channel", "channel_index")):
+            continue  # e.g. fl_get_channel_count has no channel argument
+        if "channel" not in props:
+            offenders[tool.name] = [p for p in ("index", "channel_index") if p in props]
+    assert not offenders, f"channel tools without a `channel` parameter: {offenders}"
