@@ -80,6 +80,10 @@ def test_swap_reports_confirmed_binding_but_does_not_claim_post_resolution(harne
     assert len(precheck["affected_links"]) == 1
     assert precheck["affected_links"][0]["target"]["parameter_name"] == "Mix"
     assert precheck["post_swap_resolution_verified"] is False
+    assert precheck["binding_survival_observed"] is False
+    assert "re-create them afterwards" in result["warning"]
+    assert precheck["binding_survival_observed"] is False
+    assert "re-create them afterwards" in result["warning"]
 
 
 def test_swap_refuses_when_automation_scan_unavailable(harness):

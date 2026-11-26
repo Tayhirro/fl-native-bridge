@@ -63,6 +63,7 @@ class Harness:
         self.failure = {}          # action -> response or callable
         self.correlation_ids = []  # every params['request_id'] observed
         self.queue_counter = 0
+        self.leases = {}           # (track, slot) -> (context, token)
 
         monkeypatch.setattr(tools, "fl_list_capabilities", self.capabilities)
         monkeypatch.setattr(tools, "fl_save_project_copy", self.save_copy)
@@ -109,11 +110,30 @@ class Harness:
                 return value(params)
             return value
         if action == "native.inspectMixerSlotLease":
-            return {"success": True, "held_by_this_write": True,
+            key = (params.get("track"), params.get("slot"))
+            held = self.leases.get(key)
+            mine = bool(held and held[0] == params.get("context")
+                        and held[1] == params.get("lease_token"))
+            return {"success": True, "occupied": held is not None,
+                    "held_by_this_write": mine,
                     "native_request_id": params.get("request_id"),
                     "queue_request_id": uuid(), "context": self.context}
-        if action in ("native.claimMixerSlot", "native.releaseMixerSlot"):
+        if action == "native.claimMixerSlot":
+            key = (params.get("track"), params.get("slot"))
+            held = self.leases.get(key)
+            if held and held != (params.get("context"), params.get("lease_token")):
+                return {"success": False, "error": "Mixer slot is reserved by another write",
+                        "native_request_id": params.get("request_id")}
+            self.leases[key] = (params.get("context"), params.get("lease_token"))
             return {"success": True, "native_request_id": params.get("request_id"),
+                    "queue_request_id": uuid(), "context": self.context}
+        if action == "native.releaseMixerSlot":
+            key = (params.get("track"), params.get("slot"))
+            held = self.leases.get(key)
+            if held == (params.get("context"), params.get("lease_token")):
+                self.leases.pop(key, None)
+            return {"success": True, "released": True,
+                    "native_request_id": params.get("request_id"),
                     "queue_request_id": uuid(), "context": self.context}
         if action == "native.scanMixerAutomationLinks":
             return {"success": True, "native_request_id": params.get("request_id"),

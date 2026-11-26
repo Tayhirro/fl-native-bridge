@@ -142,3 +142,47 @@ def test_unknown_write_has_no_retained_artifacts_deleted_prematurely(harness):
     assert result["state"] == "outcome_unknown"
     assert result["retained_artifacts"]
     assert all(Path(p).exists() for p in result["retained_artifacts"])
+
+
+def test_successful_swap_releases_both_slot_leases(harness):
+    """A finished swap must release both slots; no waiting for TTL."""
+    result = tools.fl_swap_mixer_effects(3, 5, 7)
+    assert result["success"] is True
+    assert result["state"] == "swap_verified"
+    releases = result.get("leases_released")
+    assert releases is not None, "swap did not report lease release"
+    assert [r["slot"] for r in releases] == [5, 7]
+    assert all(r["released"] for r in releases), releases
+    assert any(a == "native.releaseMixerSlot" for a, _ in harness.calls)
+
+
+def test_failed_swap_also_releases_both_slot_leases(harness):
+    """Even a failed write must not leave slots locked until TTL."""
+    _inject_at(harness, "native.removeMixerEffect", 1, _fault("failed"))
+    result = tools.fl_swap_mixer_effects(3, 5, 7)
+    assert result["success"] is False
+    releases = result.get("leases_released") or []
+    assert [r["slot"] for r in releases] == [5, 7]
+    assert all(r["released"] for r in releases), releases
+
+
+
+
+def test_lease_release_readback_detects_still_held(monkeypatch, harness):
+    """If the release RPC lies, the readback must say released=False."""
+    original = harness.send_command
+
+    def guarded(action, params, timeout=10):
+        if action == "native.releaseMixerSlot":
+            # Pretend success but keep the lease held (the live symptom).
+            return {"success": True, "native_request_id": params.get("request_id"),
+                    "queue_request_id": uuid(), "context": harness.context}
+        return original(action, params, timeout)
+
+    monkeypatch.setattr(tools, "get_connection",
+                        lambda: types.SimpleNamespace(send_command=guarded))
+    result = tools.fl_swap_mixer_effects(3, 5, 7)
+    releases = result.get("leases_released") or []
+    assert len(releases) == 2
+    assert all(r["rpc_success"] for r in releases)
+    assert all(r["released"] is False for r in releases), releases

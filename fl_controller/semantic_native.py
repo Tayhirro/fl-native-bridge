@@ -2359,7 +2359,8 @@ def _dispatch(action, params):
         held = _read_lease(key) if key else None
         mine = bool(held and held[0] == params["context"]
                     and held[1] == params["lease_token"])
-        return {"success": True, "held_by_this_write": mine,
+        return {"success": True, "occupied": held is not None,
+                "held_by_this_write": mine,
                 "native_request_id": params.get("request_id")}
     if action == "native.removeMixerEffect":
         return {**remove_mixer_effect(params), "native_request_id": params.get("request_id")}

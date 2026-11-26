@@ -1191,7 +1191,16 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
                     "request_id": uuid4().hex, "context": context,
                     "track": track, "slot": slot, "lease_token": token,
                 }, timeout=15.0)
-                released.append({"slot": slot, "released": bool(reply.get("success"))})
+                # Read back: success=True on release only means the RPC ran.
+                # `occupied` is independent of the token we pass, so this
+                # catches a release that reported success but left the lease.
+                check = conn.send_command("native.inspectMixerSlotLease", {
+                    "request_id": uuid4().hex, "context": context,
+                    "track": track, "slot": slot, "lease_token": token,
+                }, timeout=15.0)
+                free = check.get("occupied") is False
+                released.append({"slot": slot, "released": free,
+                                 "rpc_success": bool(reply.get("success"))})
             except (OSError, ValueError, RuntimeError) as exc:
                 released.append({"slot": slot, "released": False, "error": str(exc)})
         result["leases_released"] = released
@@ -1399,10 +1408,14 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
             "track": track, "slots": [slot_a, slot_b],
         }, timeout=15.0)
         affected = scan.get("affected") if scan.get("success") else None
+        # Live acceptance on 26.1.7.5654 observed that a successful swap leaves
+        # the affected channel's link registry empty. A confirmed binding is
+        # therefore NOT a promise that it survives the swap: say so explicitly.
         plan["automation_precheck"] = {
             "available": affected is not None,
             "affected_links": affected or [],
             "post_swap_resolution_verified": False,
+            "binding_survival_observed": False,
         }
         if affected is None:
             return finish({**plan, "success": False, "state": NOT_WRITTEN,
@@ -1413,6 +1426,12 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
                            "error": "%d automation link(s) target these slots without a "
                                     "confirmed binding; refusing structural swap"
                                     % len(unconfirmed)})
+        if affected:
+            plan["warning"] = (
+                (plan.get("warning") or "")
+                + " %d automation link(s) target these slots; live acceptance observed "
+                  "their link registry empty after a swap, so re-create them afterwards."
+                % len(affected)).strip()
         # Staging must succeed before the first destructive call.
         if not stage_presets(plan):
             return finish({**plan, "success": False, "state": NOT_WRITTEN,
