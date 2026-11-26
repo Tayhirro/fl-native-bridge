@@ -1,5 +1,9 @@
 <p align="center"><img src="docs/icon-anim.gif" width="88" alt="fl-native-bridge 图标"></p>
 
+<p align="center">
+  <a href="README.md">English</a> · <strong>中文</strong>
+</p>
+
 # fl-native-bridge
 
 一个运行在 FL Studio 自带 Python 进程内的原生 C 扩展，直接调用引擎内部例程——并以 MCP 工具的形式暴露给 AI 助手。

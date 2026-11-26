@@ -1,5 +1,9 @@
 <p align="center"><img src="docs/icon-anim.gif" width="88" alt="fl-native-bridge icon"></p>
 
+<p align="center">
+  <strong>English</strong> · <a href="README_CN.md">中文</a>
+</p>
+
 # fl-native-bridge
 
 A native C extension that runs inside FL Studio's own Python process and calls the
