@@ -114,3 +114,79 @@ def test_verify_stops_on_project_change(ctrl, monkeypatch):
     ctrl.claim_slot(3, 5, "ctx-A", "token-1")
     with pytest.raises(RuntimeError, match="project changed"):
         ctrl.verify_slot_context(3, 5, "ctx-A", "token-1")
+
+
+def test_load_effect_rechecks_lease_after_write(ctrl, monkeypatch, tmp_path):
+    """The controller's insert path must verify the lease before and after."""
+
+    preset = tmp_path / "delay.fst"
+    preset.write_bytes(b"FLhd" + b"\0" * 18 + b"FLdt" + b"\0" * 4)
+    calls = []
+
+    class Loader:
+        def initialize(self):
+            return "engine-path"
+
+        def execute(self, op, args):
+            calls.append((op, args))
+            return {}
+
+    monkeypatch.setattr(ctrl, "effect_context", lambda: "ctx-A")
+    monkeypatch.setattr(ctrl, "native_effect_loader", lambda: Loader())
+    monkeypatch.setattr(ctrl, "read_effect_slot", lambda p: {
+        "occupied": False, "track": 3, "slot": 5})
+    monkeypatch.setattr(ctrl.transport, "isPlaying", lambda: False)
+    monkeypatch.setattr(ctrl.transport, "isRecording", lambda: False)
+    monkeypatch.setitem(sys.modules, "general", types.SimpleNamespace(safeToEdit=lambda: True))
+
+    params = {"name": "Fruity Delay 3", "context": "ctx-A",
+              "preset_path": str(preset), "dry_run": False,
+              "lease_token": "token-1", "track": 3, "slot": 5}
+
+    # Without a claim, the insert must be refused before the native call.
+    with pytest.raises(RuntimeError, match="lease is missing"):
+        ctrl.load_effect_at_slot(params)
+    assert not calls
+
+    # With a claim, the insert runs and is verified.
+    ctrl.claim_slot(3, 5, "ctx-A", "token-1")
+    result = ctrl.load_effect_at_slot(params)
+    assert result["success"] is True
+    assert result["submitted"] is True
+    assert calls[0][0] == "mixer.insert_empty_slot"
+
+
+def test_load_effect_preserves_submitted_when_post_check_fails(ctrl, monkeypatch, tmp_path):
+    """A lease lost during the write must not erase submitted=True."""
+    preset = tmp_path / "delay.fst"
+    preset.write_bytes(b"FLhd" + b"\0" * 18 + b"FLdt" + b"\0" * 4)
+    executed = []
+
+    class Loader:
+        def initialize(self):
+            return "engine-path"
+
+        def execute(self, op, args):
+            executed.append(op)
+            # Simulate another caller stealing the lease mid-write.
+            ctrl._slot_leases.pop((3, 5), None)
+            return {}
+
+    monkeypatch.setattr(ctrl, "effect_context", lambda: "ctx-A")
+    monkeypatch.setattr(ctrl, "native_effect_loader", lambda: Loader())
+    monkeypatch.setattr(ctrl, "read_effect_slot", lambda p: {
+        "occupied": False, "track": 3, "slot": 5})
+    monkeypatch.setattr(ctrl.transport, "isPlaying", lambda: False)
+    monkeypatch.setattr(ctrl.transport, "isRecording", lambda: False)
+    monkeypatch.setitem(sys.modules, "general", types.SimpleNamespace(safeToEdit=lambda: True))
+    ctrl.claim_slot(3, 5, "ctx-A", "token-1")
+
+    result = ctrl.load_effect_at_slot({
+        "name": "Fruity Delay 3", "context": "ctx-A",
+        "preset_path": str(preset), "dry_run": False,
+        "lease_token": "token-1", "track": 3, "slot": 5,
+    })
+    assert len(executed) == 1  # the write really happened
+    assert result["success"] is False
+    assert result["submitted"] is True
+    assert result["verified"] is False

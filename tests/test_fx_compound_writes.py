@@ -108,6 +108,10 @@ class Harness:
             if callable(value):
                 return value(params)
             return value
+        if action == "native.inspectMixerSlotLease":
+            return {"success": True, "held_by_this_write": True,
+                    "native_request_id": params.get("request_id"),
+                    "queue_request_id": uuid(), "context": self.context}
         if action in ("native.claimMixerSlot", "native.releaseMixerSlot"):
             return {"success": True, "native_request_id": params.get("request_id"),
                     "queue_request_id": uuid(), "context": self.context}

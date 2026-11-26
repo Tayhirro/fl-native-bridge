@@ -1288,6 +1288,19 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
         if not _terminal(steps):
             response["restore_blocked"] = "submitted requests have not finished"
             return response
+        # The observed state can only be attributed to this swap if our slot
+        # leases are still held; another writer editing either slot in between
+        # makes a replay unsafe even when the digests happen to differ.
+        token = lease.get("token")
+        if token:
+            for check_slot in (slot_a, slot_b):
+                held = conn.send_command("native.inspectMixerSlotLease", {
+                    "request_id": uuid4().hex, "context": context,
+                    "track": track, "slot": check_slot, "lease_token": token,
+                }, timeout=15.0)
+                if not held.get("held_by_this_write"):
+                    response["restore_blocked"] = "slot lease no longer held by this swap"
+                    return response
         fresh = fl_list_capabilities()
         if (not fresh.get("success") or fresh.get("context") != context):
             response["restore_blocked"] = "instance, controller or project changed"

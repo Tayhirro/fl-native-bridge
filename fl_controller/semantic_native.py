@@ -1808,9 +1808,14 @@ def remove_mixer_effect(params):
                 "track": track, "slot": slot, "plugin_name": plugin_name,
                 "context": effect_context()}
     loader.execute("mixer.remove_effect", (track, slot))
-    # Re-check the lease in the same callback after the mutation.
+    # Re-check the lease in the same callback after the mutation. A failed
+    # re-check must not erase the fact that the write was submitted.
     if isinstance(token, str):
-        verify_slot_context(track, slot, params["context"], token)
+        try:
+            verify_slot_context(track, slot, params["context"], token)
+        except (RuntimeError, ValueError) as exc:
+            return {"success": False, "submitted": True, "verified": False,
+                    "track": track, "slot": slot, "error": str(exc)}
     still = plugins.isValid(track, slot, True)
     if isinstance(token, str):
         release_slot(track, slot, params["context"], token)
@@ -2253,6 +2258,11 @@ def load_effect_at_slot(params):
         raise RuntimeError("Stop playback or recording and wait until FL Studio can edit")
     if params.get("context") != effect_context():
         raise RuntimeError("The FL controller or current project changed before insertion")
+    # A compound caller passes a lease token; verify the slot still belongs to
+    # this write in the same OnIdle callback, just before the native insert.
+    token = params.get("lease_token")
+    if isinstance(token, str):
+        verify_slot_context(target["track"], target["slot"], params["context"], token)
     preset = Path(params["preset_path"])
     if (not preset.is_absolute() or preset.suffix.casefold() != ".fst"
             or preset.stem.strip().casefold() == "(delete) effect" or not preset.is_file()):
@@ -2268,7 +2278,16 @@ def load_effect_at_slot(params):
         loader.execute("mixer.insert_empty_slot", (str(preset), target["track"], target["slot"]))
     except Exception as exc:
         return {"success": False, "submitted": True, "error": str(exc)}
-    return {"success": True, "submitted": True}
+    # Re-check after the mutation: a context switch or playback start during
+    # the call must not be reported as a verified insert. The write already
+    # happened, so submitted=True must survive even when the re-check fails.
+    if isinstance(token, str):
+        try:
+            verify_slot_context(target["track"], target["slot"], params["context"], token)
+        except (RuntimeError, ValueError) as exc:
+            return {"success": False, "submitted": True, "verified": False,
+                    "error": str(exc)}
+    return {"success": True, "submitted": True, "verified": True}
 
 def _dispatch(action, params):
     """Dispatch only operations registered for the controller idle callback."""
@@ -2332,6 +2351,13 @@ def _dispatch(action, params):
     if action == "native.releaseMixerSlot":
         release_slot(params["track"], params["slot"], params["context"], params["lease_token"])
         return {"success": True, "released": True, "native_request_id": params.get("request_id")}
+    if action == "native.inspectMixerSlotLease":
+        key = _lease_key(params["track"], params["slot"])
+        held = _read_lease(key) if key else None
+        mine = bool(held and held[0] == params["context"]
+                    and held[1] == params["lease_token"])
+        return {"success": True, "held_by_this_write": mine,
+                "native_request_id": params.get("request_id")}
     if action == "native.removeMixerEffect":
         return {**remove_mixer_effect(params), "native_request_id": params.get("request_id")}
     if action == "native.replaceMixerEffect":
@@ -2415,7 +2441,7 @@ ACTIONS = frozenset({
     "native.setMixerSend", "native.readMixerSends", "native.deleteMixerSend",
     "native.saveProjectCopy",
     "native.removeMixerEffect",
-    "native.claimMixerSlot", "native.releaseMixerSlot",
+    "native.claimMixerSlot", "native.releaseMixerSlot", "native.inspectMixerSlotLease",
     "native.replaceMixerEffect",
     "native.deletePlaylistClip", "native.duplicatePlaylistClip", "native.setPlaylistClipMuted",
     "native.trimPlaylistClip", "native.splitPlaylistClip",
