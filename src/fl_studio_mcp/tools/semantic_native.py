@@ -1272,19 +1272,45 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
                 "irreversible": True, "steps": [], "status_request_ids": []}
     context, engine_path = pinned
     import tempfile
+
+    # Outcome states. Kept as plain strings so existing response fields stay
+    # compatible; `state` is additive.
+    NOT_WRITTEN = "not_written"           # nothing reached FL
+    SWAP_VERIFIED = "swap_verified"       # both digests cross-matched
+    ORIGINAL_RESTORED = "original_restored"  # both originals verified after repair
+    OUTCOME_UNKNOWN = "outcome_unknown"   # a write may still be in flight
+    PARTIAL = "partial_modification"      # known write, state not verified/repaired
+
     steps: list[dict] = []
     saved = None
     synths: list[Path] = []
     verify_path = None
     restore_paths: list[Path] = []
+    staged: dict[str, Path] = {}          # preset kind -> validated FST
+    project_verified = False              # only true after a successful readback
     conn = get_connection()
 
     def finish(result: dict) -> dict:
+        nonlocal project_verified
         result.setdefault("steps", steps)
         result.setdefault("status_request_ids", _status_request_ids(steps))
         result.setdefault("irreversible", True)
-        retained = _release_when_final(
-            [p for p in (saved, verify_path, *restore_paths, *synths) if p is not None], steps)
+        # A verified repair wins over a generic partial failure, but never
+        # overstates the swap itself (success stays False).
+        if result.get("restored") is True:
+            result.setdefault("state", ORIGINAL_RESTORED)
+            project_verified = True
+        result.setdefault("state", PARTIAL)
+        # Recovery material must outlive a failed or unverifiable readback:
+        # deleting it here would leave the caller with no way to recover.
+        if project_verified:
+            retained = _release_when_final(
+                [p for p in (saved, verify_path, *restore_paths, *synths) if p is not None],
+                steps)
+        else:
+            retained = [str(p) for p in
+                        (saved, verify_path, *restore_paths, *synths)
+                        if p is not None and p.exists()]
         if retained:
             result["retained_artifacts"] = retained
         return result
@@ -1319,16 +1345,43 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
                                   {"track": track, "slot": slot}))
         return response
 
-    def load(plugin: str, state: bytes, slot: int, label: str) -> dict:
-        request_id = uuid4().hex
-        skeleton = _effect_preset(plugin, engine_path, None)
-        synthetic = _fst_with_plugin_state(skeleton.read_bytes(), state)
+    def stage_presets(plan_data: dict) -> bool:
+        """Build and validate every preset BEFORE the first destructive write.
+
+        Four presets are needed: forward A<-B and B<-A, plus the two restore
+        presets. Building them at load time after a slot was removed can fail
+        with no recovery material left; staging once here makes the whole
+        write sequence replayable from files that were already proven valid.
+        """
         out_dir = (Path.home() / "Documents/Image-Line/FL Studio/Presets"
                    / "Plugin database/Effects")
         out_dir.mkdir(parents=True, exist_ok=True)
-        synth = out_dir / ("FLMCP-Swap-" + request_id[:10] + ".fst")
-        synth.write_bytes(synthetic)
-        synths.append(synth)
+        wanted = {
+            "forward_a": (plan_data["b"]["plugin"], states[slot_b], plan_data["b"]["sha256"]),
+            "forward_b": (plan_data["a"]["plugin"], states[slot_a], plan_data["a"]["sha256"]),
+            "restore_a": (plan_data["a"]["plugin"], states[slot_a], plan_data["a"]["sha256"]),
+            "restore_b": (plan_data["b"]["plugin"], states[slot_b], plan_data["b"]["sha256"]),
+        }
+        for kind, (plugin, state, want_sha) in wanted.items():
+            try:
+                synthetic = _fst_with_plugin_state(
+                    _effect_preset(plugin, engine_path, None).read_bytes(), state)
+                # Verify the FST carries exactly the intended event-213 payload.
+                events = _flp_event_layout(synthetic)[2]
+                records = [e["payload"] for e in events if e["id"] == 213]
+            except (OSError, ValueError, TypeError):
+                return False
+            if not records or digest(records[0]) != want_sha:
+                return False
+            path = out_dir / ("FLMCP-SwapStage-" + uuid4().hex[:12] + ".fst")
+            path.write_bytes(synthetic)
+            staged[kind] = path
+            synths.append(path)
+        return True
+
+    def load(kind: str, plugin: str, state: bytes, slot: int, label: str) -> dict:
+        request_id = uuid4().hex
+        synth = staged[kind]   # staged and validated before any write
         result = _load_state_into_slot(plugin, state, track, slot, engine_path,
                                        context=context, synth_path=synth)
         steps.append(_step_record(label, result.get("effect_request_id") or request_id,
@@ -1384,7 +1437,8 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
                         or not removed.get("success")):
                     response["restore_blocked"] = "restore removal failed or is unknown"
                     return response
-            loaded = load(plugin, state, slot, "restore_load_" + label)
+            loaded = load("restore_" + label, plugin, state, slot,
+                          "restore_load_" + label)
             if (loaded.get("write_outcome_unknown") or not loaded["success"]):
                 response["restore_blocked"] = "restore load failed or is unknown"
                 return response
@@ -1438,50 +1492,47 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
         if dry_run:
             return finish(plan)
 
-        # Stage both synthetic presets before the first destructive call.
-        for slot, source in ((slot_a, slot_b), (slot_b, slot_a)):
-            skeleton = _effect_preset(names[source], engine_path, None)
-            synthetic = _fst_with_plugin_state(skeleton.read_bytes(), states[source])
-            out_dir = (Path.home() / "Documents/Image-Line/FL Studio/Presets"
-                       / "Plugin database/Effects")
-            out_dir.mkdir(parents=True, exist_ok=True)
-            synth = out_dir / ("FLMCP-SwapStage-" + uuid4().hex[:10] + ".fst")
-            synth.write_bytes(synthetic)
-            synths.append(synth)
+        # Stage AND validate all four presets before the first destructive call.
+        if not stage_presets(plan):
+            return finish({**plan, "success": False, "state": NOT_WRITTEN,
+                           "error": "Could not stage validated swap/restore presets"})
 
         # A <- B's state, B <- A's state. Stop on the first unknown result.
         r1 = remove(slot_a, "remove_a")
         if _step_outcome(r1) == "outcome_unknown":
             return finish({**plan, "success": False, "submitted": True,
-                           "state": "outcome_unknown", "error": "remove A result is unknown"})
+                           "state": OUTCOME_UNKNOWN, "error": "remove A result is unknown"})
         if not r1.get("success"):
-            return finish({**plan, "success": False,
+            return finish({**plan, "success": False, "state": NOT_WRITTEN,
                            "error": r1.get("error") or "remove A failed"})
-        l1 = load(names[slot_b], states[slot_b], slot_a, "load_b_into_a")
+        l1 = load("forward_a", names[slot_b], states[slot_b], slot_a, "load_b_into_a")
         if l1.get("write_outcome_unknown"):
             # Never compensate while the original write may still be in flight.
             return finish({**plan, "success": False, "submitted": True,
-                           "state": "outcome_unknown", "error": "load B into A is unknown"})
+                           "state": OUTCOME_UNKNOWN, "error": "load B into A is unknown"})
         if not l1["success"]:
             result = {**plan, "success": False, "submitted": True,
+                      "state": PARTIAL,
                       "error": l1.get("error") or "load B into A failed"}
             result.update(restore_if_permitted("load_b_into_a_failed"))
             return finish(result)
         r2 = remove(slot_b, "remove_b")
         if _step_outcome(r2) == "outcome_unknown":
             return finish({**plan, "success": False, "submitted": True,
-                           "state": "outcome_unknown", "error": "remove B result is unknown"})
+                           "state": OUTCOME_UNKNOWN, "error": "remove B result is unknown"})
         if not r2.get("success"):
             result = {**plan, "success": False, "submitted": True,
+                      "state": PARTIAL,
                       "error": r2.get("error") or "remove B failed; A now holds B"}
             result.update(restore_if_permitted("remove_b_failed"))
             return finish(result)
-        l2 = load(names[slot_a], states[slot_a], slot_b, "load_a_into_b")
+        l2 = load("forward_b", names[slot_a], states[slot_a], slot_b, "load_a_into_b")
         if l2.get("write_outcome_unknown"):
             return finish({**plan, "success": False, "submitted": True,
-                           "state": "outcome_unknown", "error": "load A into B is unknown"})
+                           "state": OUTCOME_UNKNOWN, "error": "load A into B is unknown"})
         if not l2["success"]:
             result = {**plan, "success": False, "submitted": True,
+                      "state": PARTIAL,
                       "error": l2.get("error") or "load A into B failed; B empty"}
             result.update(restore_if_permitted("load_a_into_b_failed"))
             return finish(result)
@@ -1490,15 +1541,20 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
         verify_path = saved.with_suffix(".verify.flp")
         after = current_state(verify_path, "verify_state")
         if after is None:
+            # Writes finished but the project could NOT be verified. Keep every
+            # recovery artifact; the caller must be able to inspect or repair.
             return finish({**plan, "success": False, "submitted": True,
-                           "error": "Verification save-copy failed or context changed"})
+                           "state": PARTIAL,
+                           "error": "Verification save-copy failed or context changed",
+                           "note": "Project state unverified; recovery material retained"})
+        project_verified = True
         a_after, b_after = after.get((track, slot_a)), after.get((track, slot_b))
         matched = bool(a_after and b_after
                        and digest(a_after) == plan["b"]["sha256"]
                        and digest(b_after) == plan["a"]["sha256"])
         if matched:
             return finish({**plan, "submitted": True, "success": True,
-                           "state_matched": True,
+                           "state": SWAP_VERIFIED, "state_matched": True,
                            "a_after_sha256": digest(a_after),
                            "b_after_sha256": digest(b_after),
                            "note": "Slots swapped with complete state"})
@@ -1509,7 +1565,7 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
         return finish(result)
     except (OSError, ValueError, RuntimeError) as exc:
         return finish({"success": False, "submitted": any(
-            step.get("submitted") for step in steps), "error": str(exc)})
+            step.get("submitted") for step in steps), "state": PARTIAL, "error": str(exc)})
 
 
 def fl_read_mixer_effect_state(track: int | None = None, slot: int | None = None) -> dict:
