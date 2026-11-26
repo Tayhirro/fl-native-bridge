@@ -576,6 +576,73 @@ def read_automation_links(params):
             "next_offset": next_offset if next_offset < count else None}
 
 
+def scan_mixer_automation_links(params):
+    """Report automation links whose encoded target lands in a Mixer slot.
+
+    This is a PRECHECK only: the exact post-swap resolution of a link on this
+    build has not been measured. Each affected link therefore carries a
+    ``binding_confirmed`` flag that is true only when FL itself corroborates a
+    currently valid plugin parameter at the same location. Callers must refuse
+    structural writes when confirmation is absent.
+    """
+    if params.get("context") != effect_context():
+        raise RuntimeError("The FL controller or current project changed before the scan")
+    track_filter = params.get("track")
+    slots = params.get("slots")
+    if (type(track_filter) is not int or not 0 <= track_filter <= 500
+            or not isinstance(slots, list) or not slots
+            or any(type(s) is not int or not 0 <= s < 10 for s in slots)):
+        raise ValueError("Invalid mixer automation scan request")
+    loader = native_effect_loader()
+    loader.initialize()
+    channel_count = channels.channelCount(True)
+    affected = []
+    for channel in range(channel_count):
+        try:
+            actual, source_event, count, records = loader.execute(
+                "automation.read_links", (channel, 0, 64))
+        except Exception:
+            continue  # a channel with no readable link registry is not a target
+        if actual != channel or len(records) % 4:
+            continue
+        for pos in range(0, len(records), 4):
+            event_id = struct.unpack_from("<I", records, pos)[0]
+            delta = event_id - 0x70008000
+            if delta < 0:
+                continue
+            location, parameter = divmod(delta, 0x10000)
+            track, slot = divmod(location, 64)
+            if track != track_filter or slot not in slots:
+                continue
+            binding_confirmed = False
+            target = None
+            try:
+                last_track = (mixer.getTrackCount() if hasattr(mixer, "getTrackCount")
+                              else mixer.trackCount() - 1)
+                if 0 <= track <= last_track and plugins.isValid(track, slot, True):
+                    parameter_count = plugins.getParamCount(track, slot, True)
+                    if type(parameter_count) is int and 0 <= parameter < parameter_count:
+                        binding_confirmed = True
+                        target = {
+                            "kind": "mixer_effect_parameter", "track": track,
+                            "slot": slot, "parameter": parameter,
+                            "plugin_name": plugins.getPluginName(track, slot, False, True),
+                            "parameter_name": plugins.getParamName(
+                                parameter, track, slot, True),
+                        }
+            except Exception:
+                pass
+            affected.append({
+                "channel": channel, "source_event": source_event,
+                "target_event_id": event_id, "track": track, "slot": slot,
+                "parameter": parameter, "binding_confirmed": binding_confirmed,
+                "target": target,
+            })
+    return {"success": True, "context": effect_context(),
+            "channel_count": channel_count, "affected": affected,
+            "post_swap_resolution_verified": False}
+
+
 def create_automation_source(params):
     """Append an automation channel linked to a verified control event.
 
@@ -2306,6 +2373,9 @@ def _dispatch(action, params):
         return {**edit_automation_points(params), "native_request_id": params.get("request_id")}
     if action == "native.createAutomationSource":
         return {**create_automation_source(params), "native_request_id": params.get("request_id")}
+    if action == "native.scanMixerAutomationLinks":
+        return {**scan_mixer_automation_links(params),
+                "native_request_id": params.get("request_id")}
     if action == "mixer.effectLoaderInfo":
         return {"engine_path": native_effect_loader().initialize(), "context": effect_context()}
     if action == "mixer.readEffectSlot":
@@ -2353,7 +2423,7 @@ ACTIONS = frozenset({
     "native.setAutomationPointTension",
     "native.moveAutomationPoint", "native.editAutomationPoints",
     "native.setAutomationPointCurve",
-    "native.createAutomationSource",
+    "native.createAutomationSource", "native.scanMixerAutomationLinks",
     "mixer.effectLoaderInfo", "mixer.readEffectSlot",
     "mixer.loadEffectAtSlot",
 })

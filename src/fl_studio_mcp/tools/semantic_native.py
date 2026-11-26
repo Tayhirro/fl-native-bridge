@@ -1513,6 +1513,31 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
             return finish(plan)
 
         # Stage AND validate all four presets before the first destructive call.
+        # Automation targets are location-encoded on this build. Swapping the
+        # plugins changes what an existing event ID resolves to; FL's exact
+        # post-swap binding has NOT been verified here, so any affected link
+        # without a corroborated current binding refuses the structural write.
+        scan_id = uuid4().hex
+        scan = conn.send_command("native.scanMixerAutomationLinks", {
+            "request_id": scan_id, "context": context,
+            "track": track, "slots": [slot_a, slot_b],
+        }, timeout=15.0)
+        affected = scan.get("affected") if scan.get("success") else None
+        plan["automation_precheck"] = {
+            "available": affected is not None,
+            "affected_links": affected or [],
+            "post_swap_resolution_verified": False,
+        }
+        if affected is None:
+            return finish({**plan, "success": False, "state": NOT_WRITTEN,
+                           "error": scan.get("error") or "Automation target precheck failed"})
+        unconfirmed = [link for link in affected if not link.get("binding_confirmed")]
+        if unconfirmed:
+            return finish({**plan, "success": False, "state": NOT_WRITTEN,
+                           "error": "%d automation link(s) target these slots without a "
+                                    "confirmed binding; refusing structural swap"
+                                    % len(unconfirmed)})
+        # Staging must succeed before the first destructive call.
         if not stage_presets(plan):
             return finish({**plan, "success": False, "state": NOT_WRITTEN,
                            "error": "Could not stage validated swap/restore presets"})
@@ -3381,6 +3406,29 @@ def fl_set_automation_point_curve(snapshot_ref: str, curve: int, dry_run: bool =
                if not verified or not result.get("success") else {})}
 
 
+def _binding_for_source(context: str, source_event: int) -> dict | None:
+    """Best-effort binding description for an edited Automation Clip.
+
+    Returns None when the controller cannot corroborate a binding; the edit
+    itself is still valid, so a missing binding is never an error.
+    """
+    try:
+        response = get_connection().send_command(
+            "native.readAutomationLinks", {
+                "request_id": uuid4().hex, "context": context, "channel": 0,
+                "offset": 0, "limit": 1, "include_targets": True,
+                "source_event": source_event,
+            }, timeout=5.0)
+    except (OSError, ValueError, RuntimeError):
+        return None
+    if not response.get("success"):
+        return None
+    for link in response.get("links", []):
+        if link.get("source_event") == source_event and isinstance(link.get("target"), dict):
+            return link["target"]
+    return None
+
+
 def _set_automation_point_float(snapshot_ref: str, value: float, dry_run: bool, field: str) -> dict:
     import math
     import struct
@@ -3435,7 +3483,11 @@ def _set_automation_point_float(snapshot_ref: str, value: float, dry_run: bool, 
                 and observed_prefix == expected_prefix)
     return {"success": bool(verified and result.get("success")), "submitted": True,
             "verified": bool(verified), "request_id": request_id, "context": context,
+            # Explicit request value, independent readback, and the binding this
+            # point belongs to when the controller can corroborate one.
+            "requested_value": value,
             "observed": point or None,
+            "binding": _binding_for_source(context, source),
             **({"error": result.get("error") or "Automation point edit could not be verified"}
                if not verified or not result.get("success") else {})}
 

@@ -111,6 +111,11 @@ class Harness:
         if action in ("native.claimMixerSlot", "native.releaseMixerSlot"):
             return {"success": True, "native_request_id": params.get("request_id"),
                     "queue_request_id": uuid(), "context": self.context}
+        if action == "native.scanMixerAutomationLinks":
+            return {"success": True, "native_request_id": params.get("request_id"),
+                    "queue_request_id": uuid(), "context": self.context,
+                    "affected": [], "channel_count": 0,
+                    "post_swap_resolution_verified": False}
         if action == "mixer.effectLoaderInfo":
             return {"success": True, "context": self.context, "engine_path": ENGINE}
         if action == "mixer.readEffectSlot":
