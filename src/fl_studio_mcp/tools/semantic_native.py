@@ -8,21 +8,21 @@ import wave
 from pathlib import Path
 from uuid import uuid4
 
+from fl_studio_mcp.utils import write_guard as guard
 from fl_studio_mcp.utils.connection import get_connection
+from fl_studio_mcp.utils.flp_events import (
+    flp_event_layout as _flp_event_layout,
+)
+from fl_studio_mcp.utils.flp_events import (
+    flp_read_varint as _flp_read_varint,
+)
+from fl_studio_mcp.utils.flp_events import flp_varint  # noqa: F401
+from fl_studio_mcp.utils.flp_events import (
+    fst_with_plugin_state as _fst_with_plugin_state,
+)
 
+_flp_varint = flp_varint  # re-exported for existing callers
 
-def _flp_read_varint(data: bytes, pos: int) -> tuple[int, int]:
-    """Decode an FLP-style little-endian base-128 varint at pos."""
-    value = 0
-    shift = 0
-    while pos < len(data):
-        byte = data[pos]
-        pos += 1
-        value |= (byte & 0x7F) << shift
-        if not byte & 0x80:
-            return value, pos
-        shift += 7
-    raise ValueError("Truncated FLP varint")
 
 def parse_flp_sampler_sources(flp_bytes: bytes) -> list[dict]:
     """Read Sampler source paths from a saved .flp without pyflp.
@@ -600,47 +600,6 @@ def load_effect_at_slot(
            if not verified or not result.get("success") else {}),
     }
 
-def _step_outcome(response: dict) -> str:
-    """Classify one RPC response without guessing at an ambiguous write."""
-    if (response.get("error_type") == "OutcomeUnknown"
-            or response.get("state") in ("outcome_unknown", "queued")):
-        return "outcome_unknown"
-    if not response.get("success"):
-        return "rejected_before_write" if not response.get("submitted") else "known_failure"
-    if response.get("submitted") and response.get("verified") is False:
-        return "partial"
-    return "completed"
-
-
-def _step_record(name: str, correlation_id: str, response: dict,
-                 slot_state: dict | None = None) -> dict:
-    """Keep the tool correlation ID and the queue envelope ID separate.
-
-    ``correlation_id`` is the ID this tool put into params and expects echoed
-    back (``effect_request_id``/``native_request_id``/``capability_request_id``).
-    ``queue_request_id`` is the envelope ID ``FileRPC.send`` created; only that
-    ID can be passed to ``fl_get_request_status``. Mixing them is how a timed
-    out mutation becomes untraceable.
-    """
-    record = {
-        "step": name,
-        "correlation_id": correlation_id,
-        "queue_request_id": response.get("queue_request_id"),
-        "submitted": bool(response.get("submitted")),
-        "outcome": _step_outcome(response),
-    }
-    if slot_state is not None:
-        record["slot_state"] = slot_state
-    if response.get("error"):
-        record["error"] = response["error"]
-    return record
-
-
-def _status_request_ids(steps: list[dict]) -> list[str]:
-    return [step["queue_request_id"] for step in steps
-            if isinstance(step.get("queue_request_id"), str)]
-
-
 def _queue_status(request_id: str) -> dict:
     """Resolve a queue envelope ID through the same store the MCP status tool uses."""
     from fl_studio_mcp.utils.file_rpc import FileRPC
@@ -648,42 +607,29 @@ def _queue_status(request_id: str) -> dict:
     return FileRPC().status(request_id)
 
 
+def _step_outcome(response: dict) -> str:
+    return guard.step_outcome(response)
+
+
+def _step_record(name: str, correlation_id: str, response: dict,
+                 slot_state: dict | None = None) -> dict:
+    return guard.step_record(name, correlation_id, response, slot_state)
+
+
+def _status_request_ids(steps: list[dict]) -> list[str]:
+    return guard.status_request_ids(steps)
+
+
 def _terminal(steps: list[dict]) -> bool:
-    """True only when every submitted request has left the queue."""
-    for step in steps:
-        request_id = step.get("queue_request_id")
-        if not request_id or not step.get("submitted"):
-            continue
-        try:
-            state = _queue_status(request_id).get("state")
-        except (OSError, ValueError, TypeError):
-            return False
-        if state in ("queued", "outcome_unknown") or state is None:
-            return False
-    return True
+    return guard.terminal(steps, _queue_status)
 
 
 def _release_when_final(paths: list[Path], steps: list[dict]) -> list[str]:
-    """Delete temp artifacts once no submitted request can still read them."""
-    if _terminal(steps):
-        for path in paths:
-            try:
-                path.unlink(missing_ok=True)
-            except OSError:
-                pass
-        return []
-    return [str(path) for path in paths if path.exists()]
+    return guard.release_when_final(paths, steps, _queue_status)
 
 
 def _pin(capabilities: dict) -> tuple[str, str] | None:
-    """Return (context, engine_path) only when the native bridge is usable."""
-    native = capabilities.get("native", {})
-    if (not capabilities.get("success") or not native.get("available")
-            or not isinstance(capabilities.get("context"), str)
-            or not isinstance(native.get("engine_path"), str)
-            or not native["engine_path"]):
-        return None
-    return capabilities["context"], native["engine_path"]
+    return guard.pin_context(capabilities)
 
 
 def fl_list_capabilities() -> dict:
@@ -963,92 +909,6 @@ def fl_read_sampler_sources() -> dict:
                 saved.unlink()
             except OSError:
                 pass
-
-def _flp_event_layout(data: bytes) -> tuple[int, int, list[dict]]:
-    """Split an FLP/FST image into (chunk_offset, header_bytes, events).
-
-    Each event keeps its raw prefix (id byte + length bytes) and payload, so the
-    stream can be rebuilt byte-for-byte except for the event being replaced.
-    """
-    if len(data) < 22 or data[:4] != b"FLhd":
-        raise ValueError("Not an FL Studio image (missing FLhd)")
-    header_length = int.from_bytes(data[4:8], "little")
-    chunk = 8 + header_length
-    if data[chunk:chunk + 4] != b"FLdt":
-        raise ValueError("No FLdt data chunk")
-    data_length = int.from_bytes(data[chunk + 4:chunk + 8], "little")
-    pos, end = chunk + 8, chunk + 8 + data_length
-    if end > len(data):
-        raise ValueError("Truncated FLdt chunk")
-    events = []
-    while pos < end:
-        start = pos
-        event_id = data[pos]
-        pos += 1
-        if event_id == 0xAC:
-            size = 1 + (2 if pos < end and data[pos] == 1 else 4)
-        elif event_id < 64:
-            size = 1
-        elif event_id < 128:
-            size = 2
-        elif event_id < 192:
-            size = 4
-        else:
-            value = shift = 0
-            while True:
-                if pos >= end:
-                    raise ValueError("Truncated event length")
-                byte = data[pos]
-                pos += 1
-                value |= (byte & 0x7F) << shift
-                if not byte & 0x80:
-                    break
-                shift += 7
-            size = value
-        payload_start = pos
-        pos += size
-        if pos > end:
-            raise ValueError("Event payload overruns the chunk")
-        events.append({"id": event_id, "start": start,
-                       "prefix": data[start:payload_start],
-                       "payload": data[payload_start:pos]})
-    if pos != end:
-        raise ValueError("Event walk did not land on the chunk end")
-    return chunk, data[:chunk + 4], events
-
-def _fst_with_plugin_state(skeleton: bytes, state: bytes) -> bytes:
-    """Rebuild an FST skeleton with its event-213 payload replaced by `state`."""
-    chunk, header, events = _flp_event_layout(skeleton)
-    has_213 = any(event["id"] == 213 for event in events)
-    body = bytearray()
-    replaced = False
-    for event in events:
-        if event["id"] == 213 and not replaced:
-            # Regenerate the id + length prefix: the new state may differ in size
-            # from the skeleton's default record, so the old prefix is invalid.
-            body.append(213)
-            body += _flp_varint(len(state))
-            body += state
-            replaced = True
-        else:
-            body += event["prefix"]
-            body += event["payload"]
-    if not has_213:
-        body.append(213)
-        body += _flp_varint(len(state))
-        body += state
-    return header + len(body).to_bytes(4, "little") + bytes(body)
-
-def _flp_varint(value: int) -> bytes:
-    out = bytearray()
-    while True:
-        byte = value & 0x7F
-        value >>= 7
-        if value:
-            out.append(byte | 0x80)
-        else:
-            out.append(byte)
-            return bytes(out)
 
 def fl_clone_mixer_effect_full(
     source_track: int, source_slot: int, target_track: int, target_slot: int,
