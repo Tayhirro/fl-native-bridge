@@ -585,6 +585,8 @@ def scan_mixer_automation_links(params):
     currently valid plugin parameter at the same location. Callers must refuse
     structural writes when confirmation is absent.
     """
+    import channels
+
     if params.get("context") != effect_context():
         raise RuntimeError("The FL controller or current project changed before the scan")
     track_filter = params.get("track")
@@ -1817,8 +1819,9 @@ def remove_mixer_effect(params):
             return {"success": False, "submitted": True, "verified": False,
                     "track": track, "slot": slot, "error": str(exc)}
     still = plugins.isValid(track, slot, True)
-    if isinstance(token, str):
-        release_slot(track, slot, params["context"], token)
+    # Do NOT release here: a compound caller (swap) removed one slot and still
+    # needs the lease for the following load and the other slot. The caller's
+    # finish() releases both; a lone caller's lease expires by TTL.
     return {"success": not still, "submitted": True, "track": track, "slot": slot,
             "removed_plugin": plugin_name, "verified": not still,
             "context": effect_context()}

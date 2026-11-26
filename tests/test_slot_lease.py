@@ -190,3 +190,34 @@ def test_load_effect_preserves_submitted_when_post_check_fails(ctrl, monkeypatch
     assert result["success"] is False
     assert result["submitted"] is True
     assert result["verified"] is False
+
+
+def test_remove_keeps_lease_for_compound_caller(ctrl, monkeypatch):
+    """Slot removal must not release a lease a compound write still needs."""
+    class Loader:
+        def initialize(self): pass
+        def execute(self, op, args): pass
+
+    monkeypatch.setattr(ctrl, "effect_context", lambda: "ctx-A")
+    monkeypatch.setattr(ctrl, "native_effect_loader", lambda: Loader())
+    monkeypatch.setattr(ctrl.transport, "isPlaying", lambda: False)
+    monkeypatch.setattr(ctrl.transport, "isRecording", lambda: False)
+    monkeypatch.setitem(sys.modules, "general", types.SimpleNamespace(safeToEdit=lambda: True))
+    # First isValid call (occupied check) true; second (post-remove) false.
+    seen = {"n": 0}
+
+    def fake_is_valid(*_):
+        seen["n"] += 1
+        return seen["n"] == 1
+
+    monkeypatch.setattr(ctrl.plugins, "isValid", fake_is_valid)
+    monkeypatch.setattr(ctrl.plugins, "getPluginName", lambda *_: "Fruity Delay 3")
+    monkeypatch.setattr(ctrl.mixer, "trackCount", lambda: 17)
+
+    ctrl.claim_slot(3, 5, "ctx-A", "token-1")
+    result = ctrl.remove_mixer_effect({
+        "context": "ctx-A", "track": 3, "slot": 5,
+        "dry_run": False, "lease_token": "token-1"})
+    assert result["submitted"] is True
+    # Lease survives for the next step of the compound write.
+    ctrl.verify_slot_context(3, 5, "ctx-A", "token-1")

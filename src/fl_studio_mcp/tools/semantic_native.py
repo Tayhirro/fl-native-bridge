@@ -1177,21 +1177,24 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
                         if p is not None and p.exists()]
         if retained:
             result["retained_artifacts"] = retained
-        release_leases()
+        release_leases(result)
         return result
 
-    def release_leases() -> None:
+    def release_leases(result: dict) -> None:
         token = lease.get("token")
         if not token:
             return
+        released = []
         for slot in (slot_a, slot_b):
             try:
-                conn.send_command("native.releaseMixerSlot", {
+                reply = conn.send_command("native.releaseMixerSlot", {
                     "request_id": uuid4().hex, "context": context,
                     "track": track, "slot": slot, "lease_token": token,
                 }, timeout=15.0)
-            except (OSError, ValueError, RuntimeError):
-                pass  # lease also expires on its own TTL
+                released.append({"slot": slot, "released": bool(reply.get("success"))})
+            except (OSError, ValueError, RuntimeError) as exc:
+                released.append({"slot": slot, "released": False, "error": str(exc)})
+        result["leases_released"] = released
 
     def plugin_of(slot: int, label: str) -> str | None:
         request_id = uuid4().hex

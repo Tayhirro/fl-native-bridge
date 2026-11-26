@@ -139,3 +139,31 @@ def test_point_edit_reports_requested_value_and_binding(monkeypatch):
     assert result["binding"] is not None
     assert result["binding"]["parameter_name"] == "Mix"
     assert result["observed"]["value"] == 0.25
+
+
+def test_controller_scan_has_channels_import(monkeypatch):
+    """The controller scan must not fail with NameError on channels.
+
+    Regression: scan_mixer_automation_links called channels.channelCount()
+    without importing the FL host module inside the function.
+    """
+    import importlib.util
+    import types
+
+    spec = importlib.util.spec_from_file_location(
+        "fl_ctrl_scan", Path(__file__).resolve().parents[1]
+        / "fl_controller" / "semantic_native.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    monkeypatch.setattr(module, "effect_context", lambda: "ctx-A")
+    channels_stub = types.SimpleNamespace(channelCount=lambda _: 0)
+    monkeypatch.setitem(sys.modules, "channels", channels_stub)
+    monkeypatch.setattr(module, "native_effect_loader", lambda: types.SimpleNamespace(
+        initialize=lambda: "engine-path"))
+    # __import__ inside the function resolves through sys.modules.
+
+    result = module.scan_mixer_automation_links({
+        "context": "ctx-A", "track": 3, "slots": [5, 7]})
+    assert result["success"] is True
+    assert result["affected"] == []
