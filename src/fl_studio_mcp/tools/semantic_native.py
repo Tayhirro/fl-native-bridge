@@ -513,6 +513,7 @@ def _effect_preset(name: str, engine_path: str, preset_path: str | None) -> Path
 def load_effect_at_slot(
     conn, name: str, track: int, slot: int, dry_run: bool, preset_path: str | None = None,
     context: str | None = None, engine_path: str | None = None,
+    lease_token: str | None = None,
 ) -> dict:
     """Load a preset into an exact slot.
 
@@ -555,7 +556,8 @@ def load_effect_at_slot(
     result = conn.send_command(
         "mixer.loadEffectAtSlot",
         {**target, "name": name, "dry_run": dry_run, "request_id": request_id,
-         "context": context, "preset_path": str(preset), "deadline": time.time() + 10},
+         "context": context, "preset_path": str(preset), "deadline": time.time() + 10,
+         **({"lease_token": lease_token} if lease_token else {})},
         timeout=30.0,
     )
     if result.get("effect_request_id") != request_id:
@@ -1204,7 +1206,8 @@ def fl_clone_mixer_effect_full(
 
 def _load_state_into_slot(plugin: str, state: bytes, track: int, slot: int,
                           engine_path: str, context: str | None = None,
-                          synth_path: Path | None = None) -> dict:
+                          synth_path: Path | None = None,
+                          lease_token: str | None = None) -> dict:
     """Load a captured event-213 record into an empty Mixer slot.
 
     A caller that has already staged the synthetic FST passes ``synth_path``;
@@ -1232,7 +1235,7 @@ def _load_state_into_slot(plugin: str, state: bytes, track: int, slot: int,
     try:
         result = load_effect_at_slot(_Conn(), plugin, track, slot, False,
                                      preset_path=str(synth), context=context,
-                                     engine_path=engine_path)
+                                     engine_path=engine_path, lease_token=lease_token)
         return {"success": bool(result.get("verified")),
                 "submitted": bool(result.get("submitted")),
                 "verified": bool(result.get("verified")),
@@ -1288,6 +1291,7 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
     restore_paths: list[Path] = []
     staged: dict[str, Path] = {}          # preset kind -> validated FST
     project_verified = False              # only true after a successful readback
+    lease: dict[str, str] = {}            # {"token": ...} once slots are claimed
     conn = get_connection()
 
     def finish(result: dict) -> dict:
@@ -1313,7 +1317,21 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
                         if p is not None and p.exists()]
         if retained:
             result["retained_artifacts"] = retained
+        release_leases()
         return result
+
+    def release_leases() -> None:
+        token = lease.get("token")
+        if not token:
+            return
+        for slot in (slot_a, slot_b):
+            try:
+                conn.send_command("native.releaseMixerSlot", {
+                    "request_id": uuid4().hex, "context": context,
+                    "track": track, "slot": slot, "lease_token": token,
+                }, timeout=15.0)
+            except (OSError, ValueError, RuntimeError):
+                pass  # lease also expires on its own TTL
 
     def plugin_of(slot: int, label: str) -> str | None:
         request_id = uuid4().hex
@@ -1340,6 +1358,7 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
         response = conn.send_command("native.removeMixerEffect", {
             "request_id": request_id, "context": context, "track": track,
             "slot": slot, "dry_run": False,
+            **({"lease_token": token} if (token := lease.get("token")) else {}),
         }, timeout=40.0)
         steps.append(_step_record(label, request_id, response,
                                   {"track": track, "slot": slot}))
@@ -1383,7 +1402,8 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
         request_id = uuid4().hex
         synth = staged[kind]   # staged and validated before any write
         result = _load_state_into_slot(plugin, state, track, slot, engine_path,
-                                       context=context, synth_path=synth)
+                                       context=context, synth_path=synth,
+                                       lease_token=lease.get("token"))
         steps.append(_step_record(label, result.get("effect_request_id") or request_id,
                                   {"success": result["success"],
                                    "submitted": result["submitted"],
@@ -1496,6 +1516,28 @@ def fl_swap_mixer_effects(track: int, slot_a: int, slot_b: int, dry_run: bool = 
         if not stage_presets(plan):
             return finish({**plan, "success": False, "state": NOT_WRITTEN,
                            "error": "Could not stage validated swap/restore presets"})
+
+        # Host-side arbitration: claim both slots for this compound write.
+        lease_token = uuid4().hex
+        lease["token"] = lease_token
+        claim = conn.send_command("native.claimMixerSlot", {
+            "request_id": uuid4().hex, "context": context,
+            "track": track, "slot": slot_a, "lease_token": lease_token,
+        }, timeout=15.0)
+        if not claim.get("success"):
+            return finish({**plan, "success": False, "state": NOT_WRITTEN,
+                           "error": claim.get("error") or "Could not claim slot A"})
+        claim_b = conn.send_command("native.claimMixerSlot", {
+            "request_id": uuid4().hex, "context": context,
+            "track": track, "slot": slot_b, "lease_token": lease_token,
+        }, timeout=15.0)
+        if not claim_b.get("success"):
+            conn.send_command("native.releaseMixerSlot", {
+                "request_id": uuid4().hex, "context": context,
+                "track": track, "slot": slot_a, "lease_token": lease_token,
+            }, timeout=15.0)
+            return finish({**plan, "success": False, "state": NOT_WRITTEN,
+                           "error": claim_b.get("error") or "Could not claim slot B"})
 
         # A <- B's state, B <- A's state. Stop on the first unknown result.
         r1 = remove(slot_a, "remove_a")

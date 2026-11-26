@@ -16,6 +16,69 @@ _effect_controller = f"{os.getpid()}:{time.time_ns()}"
 _effect_project = 0
 _playlist_revision = 0
 
+# Host-side write leases for Mixer FX slots. Several MCP client processes can
+# submit requests to the same controller; the controller is the only arbiter,
+# and it serialises them on its OnIdle callback. A lease spans one compound
+# write so another caller cannot edit the same slot between its steps.
+# Keys are (track, slot); values are (owner, token, expires_at).
+_slot_leases: dict[tuple[int, int], tuple[str, str, float]] = {}
+_LEASE_SECONDS = 20.0
+
+
+def _lease_key(track: int, slot: int) -> tuple[int, int] | None:
+    if type(track) is int and type(slot) is int and 0 <= track <= 500 and 0 <= slot < 10:
+        return track, slot
+    return None
+
+
+def _read_lease(key: tuple[int, int]):
+    entry = _slot_leases.get(key)
+    if not entry:
+        return None
+    owner, token, expires = entry
+    if time.monotonic() >= expires:
+        del _slot_leases[key]
+        return None
+    return owner, token
+
+
+def claim_slot(track: int, slot: int, context: str, token: str) -> None:
+    """Claim a slot for a compound write, or refuse if another caller holds it.
+
+    A lease whose original request is still in flight is never stolen: only
+    expiry releases it, and callers must resubmit with a fresh token after an
+    outcome-unknown result.
+    """
+    key = _lease_key(track, slot)
+    if key is None:
+        raise ValueError("Invalid slot lease target")
+    held = _read_lease(key)
+    if held and (held[0] != context or held[1] != token):
+        raise RuntimeError("Mixer slot is reserved by another write")
+    _slot_leases[key] = (context, token, time.monotonic() + _LEASE_SECONDS)
+
+
+def release_slot(track: int, slot: int, context: str, token: str) -> None:
+    key = _lease_key(track, slot)
+    if key is None:
+        return
+    held = _read_lease(key)
+    if held and held[0] == context and held[1] == token:
+        _slot_leases.pop(key, None)
+
+
+def verify_slot_context(track: int, slot: int, context: str, token: str) -> None:
+    """Re-check, in the same OnIdle callback, that this write still owns the slot."""
+    key = _lease_key(track, slot)
+    held = _read_lease(key) if key else None
+    if not held or held[0] != context or held[1] != token:
+        raise RuntimeError("Slot lease is missing or belongs to another write")
+    if context != effect_context():
+        raise RuntimeError("The FL controller or current project changed before the edit")
+    import general
+    if transport.isPlaying() or transport.isRecording() or not general.safeToEdit():
+        raise RuntimeError("Stop playback or recording and wait until FL Studio can edit")
+
 # Automation point curve-shape dword values measured against the actual host
 # output on FL 26.1.7.5654 (see the isolated curve-mapping evidence). The
 # dword sits at record bytes +0x0C..+0x0F, right after the tension float; the
@@ -1655,12 +1718,17 @@ def remove_mixer_effect(params):
     track = params.get("track")
     slot = params.get("slot")
     dry_run = params.get("dry_run", False)
+    token = params.get("lease_token")
     last_track = (mixer.getTrackCount() if hasattr(mixer, "getTrackCount")
                   else mixer.trackCount() - 1)
     if (type(track) is not int or not 0 <= track <= last_track
             or type(slot) is not int or not 0 <= slot < 10
             or type(dry_run) is not bool):
         raise ValueError("Invalid mixer effect slot request")
+    # A token turns on host-side slot arbitration; legacy single-call requests
+    # without one keep working but still re-check context and editability here.
+    if not dry_run and isinstance(token, str):
+        verify_slot_context(track, slot, params["context"], token)
     if transport.isPlaying() or transport.isRecording() or not general.safeToEdit():
         raise RuntimeError("Stop playback or recording and wait until FL Studio can edit")
     if not plugins.isValid(track, slot, True):
@@ -1673,7 +1741,12 @@ def remove_mixer_effect(params):
                 "track": track, "slot": slot, "plugin_name": plugin_name,
                 "context": effect_context()}
     loader.execute("mixer.remove_effect", (track, slot))
+    # Re-check the lease in the same callback after the mutation.
+    if isinstance(token, str):
+        verify_slot_context(track, slot, params["context"], token)
     still = plugins.isValid(track, slot, True)
+    if isinstance(token, str):
+        release_slot(track, slot, params["context"], token)
     return {"success": not still, "submitted": True, "track": track, "slot": slot,
             "removed_plugin": plugin_name, "verified": not still,
             "context": effect_context()}
@@ -2186,6 +2259,12 @@ def _dispatch(action, params):
         return {**set_arrangement_name(params), "native_request_id": params.get("request_id")}
     if action == "native.setCurrentArrangement":
         return {**set_current_arrangement(params), "native_request_id": params.get("request_id")}
+    if action == "native.claimMixerSlot":
+        claim_slot(params["track"], params["slot"], params["context"], params["lease_token"])
+        return {"success": True, "claimed": True, "native_request_id": params.get("request_id")}
+    if action == "native.releaseMixerSlot":
+        release_slot(params["track"], params["slot"], params["context"], params["lease_token"])
+        return {"success": True, "released": True, "native_request_id": params.get("request_id")}
     if action == "native.removeMixerEffect":
         return {**remove_mixer_effect(params), "native_request_id": params.get("request_id")}
     if action == "native.replaceMixerEffect":
@@ -2266,6 +2345,7 @@ ACTIONS = frozenset({
     "native.setMixerSend", "native.readMixerSends", "native.deleteMixerSend",
     "native.saveProjectCopy",
     "native.removeMixerEffect",
+    "native.claimMixerSlot", "native.releaseMixerSlot",
     "native.replaceMixerEffect",
     "native.deletePlaylistClip", "native.duplicatePlaylistClip", "native.setPlaylistClipMuted",
     "native.trimPlaylistClip", "native.splitPlaylistClip",
