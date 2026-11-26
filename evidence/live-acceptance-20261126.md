@@ -30,12 +30,19 @@ automation-link resolution across an FX swap, and host-side slot arbitration.
    another write"). Fixed by leaving release to the compound caller's
    `finish()`; a lone caller's lease expires by TTL.
 
-## Follow-up (not part of this run)
+## Follow-up — addressed after this run
 
-- Successful swaps were followed by an occupied lease for up to the 20 s TTL.
-  `fl_swap_mixer_effects` now records `leases_released` per slot so a caller can
-  see whether the release RPC succeeded. Whether the release RPC itself needs
-  further work should be checked in a dedicated session.
-- The disappearing automation link after swap needs a targeted investigation:
-  determine whether FL removes the clip's link registry entry when its target
-  plugin is replaced, or whether the tool's automation channel index shifts.
+- **Lease release**: `releaseMixerSlot` reporting `success=True` is not proof
+  that the slot is free (live runs showed occupied leases until TTL). The
+  controller's `inspectMixerSlotLease` now also returns `occupied`, and
+  `fl_swap_mixer_effects` reads it back after releasing each slot, reporting
+  `leases_released: [{slot, released, rpc_success}]`. A regression test
+  injects a lying release RPC and asserts `released=False` is reported.
+- **Automation link disappearance**: the exact FL-side cause (link registry
+  entry removed on plugin replacement vs. channel index shift) was not
+  resolved without another live session. What IS established is that a
+  confirmed pre-swap binding does not survive the swap in practice, so
+  `automation_precheck` now reports `binding_survival_observed: false` and
+  the swap result carries a warning telling the caller to re-create the
+  affected links afterwards. A rejected swap (unconfirmed binding) still
+  makes no writes.
