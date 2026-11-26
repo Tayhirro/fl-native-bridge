@@ -8,6 +8,7 @@ dry_run returned before the write so it looked fine, while every real load
 failed. These tests patch the shared loader and assert the context arrives.
 """
 
+import ast
 import inspect
 import sys
 from pathlib import Path
@@ -60,3 +61,26 @@ def test_effect_at_slot_tool_source_forwards_context():
         "fl_load_effect_at_slot does not forward context to the loader"
     )
     assert "engine_path=caps[\"native\"][\"engine_path\"]" in src
+
+
+def test_all_context_requiring_helper_calls_pin_context():
+    """No caller of a context-checking helper may omit context/engine_path.
+
+    Regression: fl_load_plugin_preset and fl_load_effect_at_slot read the
+    capabilities but called load_effect_at_slot without forwarding context,
+    so the controller rejected every real load as 'project changed'.
+    """
+    tree = ast.parse((ROOT / "src/fl_studio_mcp/tools/semantic_native.py")
+                     .read_text(encoding="utf-8"))
+    offenders = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        fn = node.func
+        if not isinstance(fn, ast.Name) or fn.id not in (
+                "load_effect_at_slot", "_load_state_into_slot"):
+            continue
+        kwargs = {k.arg for k in node.keywords}
+        if "context" not in kwargs:
+            offenders.append((node.lineno, fn.id))
+    assert not offenders, f"helper calls without context: {offenders}"
