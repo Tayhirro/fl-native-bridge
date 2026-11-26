@@ -33,6 +33,31 @@ static PyObject *describe(PyObject *self, PyObject *unused) {
     return result;
 }
 
+/* Test-only operation that is deliberately dispatched but NOT registered in
+ * the dependency table. It records entry so tests can prove the gate refused
+ * it before the handler ran. Production never calls it. */
+static int test_unregistered_handler_entered = 0;
+
+static PyObject *test_unregistered_handler(PyObject *self, PyObject *args) {
+    (void)self;
+    (void)args;
+    test_unregistered_handler_entered = 1;
+    Py_RETURN_NONE;
+}
+
+static PyObject *test_unregistered_was_called(PyObject *self, PyObject *args) {
+    (void)self;
+    (void)args;
+    return PyBool_FromLong(test_unregistered_handler_entered);
+}
+
+static PyObject *test_reset_unregistered(PyObject *self, PyObject *args) {
+    (void)self;
+    (void)args;
+    test_unregistered_handler_entered = 0;
+    Py_RETURN_NONE;
+}
+
 static PyObject *execute(PyObject *self, PyObject *args) {
     const char *operation;
     PyObject *arguments;
@@ -152,6 +177,9 @@ static PyObject *execute(PyObject *self, PyObject *args) {
     if (!strcmp(operation, "mixer.remove_effect")) {
         return mixer_remove_effect(self, arguments);
     }
+    if (!strcmp(operation, "test.unregistered")) {
+        return test_unregistered_handler(self, arguments);
+    }
     PyErr_SetString(PyExc_ValueError, "Unknown native operation");
     return NULL;
 }
@@ -186,6 +214,10 @@ static PyMethodDef methods[] = {
      "Test-only: downgrade one evidence field; cannot raise the gate."},
     {"check_engine_digest", check_engine_digest, METH_VARARGS,
      "Test-only: compare a digest with the compiled profile."},
+    {"test_unregistered_was_called", test_unregistered_was_called, METH_NOARGS,
+     "Test-only: whether the unregistered handler was entered."},
+    {"test_reset_unregistered", test_reset_unregistered, METH_NOARGS,
+     "Test-only: clear the unregistered-handler flag."},
     {NULL, NULL, 0, NULL},
 };
 

@@ -26,3 +26,4 @@ EXPORTS
     PyList_Append
     PyUnicode_FromString
     PyBool_FromLong
+    _Py_NoneStruct

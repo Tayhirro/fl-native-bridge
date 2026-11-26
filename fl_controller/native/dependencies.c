@@ -248,7 +248,8 @@ static int entry_bytes_valid(const unsigned char *engine, uint32_t rva) {
 const char *fl_dependency_gate(const char *operation, const unsigned char *engine) {
     const OperationDependency *dependency = find_dependency(operation);
     if (!dependency) {
-        return NULL; /* no declared dependency; existing build gate still applies */
+        /* Fail closed: a handler must never run without a declared dependency. */
+        return "Operation is not registered in the dependency table";
     }
     if (!engine) {
         engine = test_engine;
@@ -308,6 +309,12 @@ PyObject *fl_describe_dependencies(void) {
         Py_DECREF(entry);
     }
     return result;
+}
+
+/* A handler may only run when the operation is registered in this table.
+ * An unregistered operation fails closed before its handler is entered. */
+int fl_has_dependency(const char *operation) {
+    return find_dependency(operation) != NULL;
 }
 
 int fl_operation_is_write(const char *operation) {

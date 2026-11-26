@@ -71,6 +71,24 @@ def main() -> int:
         else:
             print(f"FAIL {operation} executed without an engine")
             return 1
+
+    # A dispatched operation absent from the dependency table must fail
+    # before its handler runs.
+    if hasattr(module, "test_unregistered_was_called"):
+        module.test_reset_unregistered()
+        try:
+            module.execute("test.unregistered", ())
+        except RuntimeError as exc:
+            if "not registered" not in str(exc):
+                print(f"FAIL unregistered operation wrong refusal: {exc}")
+                return 1
+        else:
+            print("FAIL unregistered operation executed")
+            return 1
+        if module.test_unregistered_was_called():
+            print("FAIL unregistered handler was entered")
+            return 1
+        print("PASS unregistered operation refused before handler")
     return 0
 
 
