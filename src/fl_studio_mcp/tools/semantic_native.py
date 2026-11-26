@@ -446,7 +446,8 @@ def fl_load_plugin_preset(
             return get_connection().send_command(action, params or {}, timeout=timeout)
 
     loaded = load_effect_at_slot(_Conn(), plugin_name, track, slot, False,
-                                 preset_path=str(target))
+                                 preset_path=str(target),
+                                 context=context, engine_path=engine_path)
     plan.update(submitted=True, success=bool(loaded.get("verified")),
                 replaced=occupied,
                 irreversible=occupied,
@@ -3617,6 +3618,16 @@ def register_semantic_native_tools(mcp):
         Mixer track 0 is Master; slot 0 is the first visible effect slot.
         """
         try:
-            return load_effect_at_slot(get_connection(), name, track, slot, dry_run, preset_path)
+            # Pin the context/engine read in this call: the controller rejects
+            # a load whose context is None or stale. dry_run returns before the
+            # write, so a successful dry_run says nothing about the real load.
+            caps = fl_list_capabilities()
+            if not caps.get("success") or not caps.get("native", {}).get("available"):
+                return {"success": False, "submitted": False,
+                        "error": caps.get("error") or "Native bridge unavailable"}
+            return load_effect_at_slot(
+                get_connection(), name, track, slot, dry_run, preset_path,
+                context=caps["context"],
+                engine_path=caps["native"]["engine_path"])
         except RuntimeError as exc:
             return {"success": False, "error": str(exc), "write_outcome_unknown": not dry_run}
