@@ -120,7 +120,7 @@ reports success.
 
 ## Tool surface
 
-173 MCP tools across transport, mixer, channels, patterns, piano roll,
+171 MCP tools across transport, mixer, channels, patterns, piano roll,
 playlist, arrangements, plugins and project save-copy. The native layer exposes 35
 operations:
 

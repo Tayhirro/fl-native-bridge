@@ -91,7 +91,7 @@ MCP server 从不直接碰 FL。每一次变更都带着请求 ID 和超时跨�
 
 ## 工具面
 
-173 个 MCP 工具，覆盖走带、Mixer、通道、Pattern、钢琴卷帘、Playlist、Arrangement、插件和工程存副本。原生层暴露 35 个操作：
+171 个 MCP 工具，覆盖走带、Mixer、通道、Pattern、钢琴卷帘、Playlist、Arrangement、插件和工程存副本。原生层暴露 35 个操作：
 
 | 模块 | 操作数 | 例子 |
 | --- | --- | --- |

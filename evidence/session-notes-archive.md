@@ -21,7 +21,7 @@ installation requirement.
   the catalog includes the deliberately blocked `general.processRECEvent`.
   Discovery does not mean every callable was exercised.
 - A stdio MCP client discovered 114 tools in one run and 120 in a later run;
-  the current registered count is 173 and should be read from the server, not
+  the current registered count is 171 and should be read from the server, not
   from these historical numbers.
 - Effect loading was accepted once at mixer track 26, slot 9 (~1.9 s). Earlier
   attempts reached unintended tracks and were recorded as failed acceptance.

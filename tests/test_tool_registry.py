@@ -71,3 +71,13 @@ def test_channel_tools_use_consistent_parameter_name():
         if "channel" not in props:
             offenders[tool.name] = [p for p in ("index", "channel_index") if p in props]
     assert not offenders, f"channel tools without a `channel` parameter: {offenders}"
+
+
+def test_documented_tool_count_matches_registry():
+    """README counts must track the registry after tools are added or removed."""
+    count = len(asyncio.run(srv.mcp.list_tools()))
+    for name in ("README.md", "README_CN.md"):
+        text = (ROOT / name).read_text(encoding="utf-8")
+        assert re.search(r"\b%d\b" % count, text), (
+            f"{name} does not mention the current tool count ({count})"
+        )
