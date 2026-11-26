@@ -17,7 +17,7 @@ automation-link resolution across an FX swap, and host-side slot arbitration.
 | FX swap between two different plugins | PASS — `state=swap_verified`, digests cross-matched, slot occupants actually exchanged (read directly via `mixer.readEffectSlot`) |
 | Host-side lease arbitration | PASS in unit tests; live runs exposed two defects, both fixed (see below) |
 | Automation link after swap | **Observed: link disappears** (empty link registry on the affected channel after a successful swap). The event ID stays location-encoded (`0x70B0A000` for track 3 / slot 5 / param 0) and, **before** the swap, FL resolves it to the current slot's plugin and parameter name (Fruity Delay 3 / 输入湿音). Post-swap resolution could not be read because the link registry was empty. This is a real finding, not a simulated result. |
-| Playback-time target value | NOT TESTED — would require audio; plan requires separate authorisation. |
+| Playback-time target value | **TESTED with explicit authorisation** (audio authorised 2026-11-26 16:59). `include_values` reads and returns a value while the transport runs, but `device.getLinkedValue()` stayed at `1.0` even after the clip's points were set to 0.2/0.9 and the clip was placed on the Playlist. **Conclusion: on 26.1.7.5654 this API returns the parameter's current value, not the automation clip's interpolated playback value.** See `evidence/live-acceptance-playback-20261126.md`. |
 
 ## Defects found live and fixed
 

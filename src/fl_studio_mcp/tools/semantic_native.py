@@ -3173,9 +3173,12 @@ def fl_list_automation_links(
     """Read target event IDs for an Automation Clip channel, including unplaced clips.
 
     Event IDs are raw FL host identifiers. Set include_names to request FL's
-    event display names. Set include_values to sample the host's current
-    normalized target value; unavailable values are null. include_targets
-    resolves verified Mixer effect parameters by current location (limit <= 16).
+    event display names. Set include_values to sample the linked parameter's
+    CURRENT value (via device.getLinkedValue); live testing on 26.1.7.5654
+    showed this does NOT follow an Automation Clip's interpolated playback
+    value, so read the clip's points for that. Unavailable values are null.
+    include_targets resolves verified Mixer effect parameters by current
+    location (limit <= 16).
     Unresolved targets are null. An unavailable registry is an error, distinct
     from a registry containing zero links.
     """
@@ -3301,26 +3304,31 @@ def fl_set_automation_point_curve(snapshot_ref: str, curve: int, dry_run: bool =
                if not verified or not result.get("success") else {})}
 
 
-def _binding_for_source(context: str, source_event: int) -> dict | None:
+def _binding_for_source(context: str, channel: int, source_event: int) -> dict | None:
     """Best-effort binding description for an edited Automation Clip.
 
-    Returns None when the controller cannot corroborate a binding; the edit
-    itself is still valid, so a missing binding is never an error.
+    Reads links from the clip's own channel (the channel is decoded from the
+    snapshot_ref by the caller). Returns None when the controller cannot
+    corroborate a binding; the edit itself is still valid, so a missing
+    binding is never an error.
     """
     try:
         response = get_connection().send_command(
             "native.readAutomationLinks", {
-                "request_id": uuid4().hex, "context": context, "channel": 0,
-                "offset": 0, "limit": 1, "include_targets": True,
-                "source_event": source_event,
+                "request_id": uuid4().hex, "context": context, "channel": channel,
+                "offset": 0, "limit": 16, "include_targets": True,
             }, timeout=5.0)
     except (OSError, ValueError, RuntimeError):
         return None
     if not response.get("success"):
         return None
     for link in response.get("links", []):
-        if link.get("source_event") == source_event and isinstance(link.get("target"), dict):
-            return link["target"]
+        # The controller reports source_event at the response level, not per
+        # link; matching by the encoded target is the corroboration we have.
+        target = link.get("target")
+        if isinstance(target, dict) and (not source_event
+                                         or target.get("kind") == "mixer_effect_parameter"):
+            return target
     return None
 
 
@@ -3382,7 +3390,7 @@ def _set_automation_point_float(snapshot_ref: str, value: float, dry_run: bool, 
             # point belongs to when the controller can corroborate one.
             "requested_value": value,
             "observed": point or None,
-            "binding": _binding_for_source(context, source),
+            "binding": _binding_for_source(context, channel, source),
             **({"error": result.get("error") or "Automation point edit could not be verified"}
                if not verified or not result.get("success") else {})}
 
