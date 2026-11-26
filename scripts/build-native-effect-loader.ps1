@@ -25,7 +25,12 @@ if ($ModuleSuffix) {
 $extension = Join-Path $OutputDirectory ($moduleName + '.pyd')
 $moduleFlags = @()
 if ($ModuleSuffix) {
-    $moduleFlags = @("-DFLMCP_MODULE_NAME=\`"$moduleName\`"", "-DFLMCP_MODULE_INIT=PyInit_$moduleName")
+    # Pass a bare identifier token; bridge.c stringifies it into the module
+    # name and pastes it into PyInit_<token>. Quoted -D values are mangled by
+    # PowerShell 7 -> GCC argument escaping on Windows runners.
+    $moduleFlags = @("-DFLMCP_MODULE_NAME_TOKEN=$moduleName")
+} else {
+    $moduleFlags = @()
 }
 
 try {

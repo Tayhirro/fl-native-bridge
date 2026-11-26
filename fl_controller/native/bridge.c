@@ -1,9 +1,26 @@
 #include "native.h"
 #include <string.h>
 
+/* The module name is passed as a bare identifier token (-DFLMCP_MODULE_NAME_TOKEN=...)
+   rather than a quoted string. Quoted -D values break across PowerShell 5/7
+   and GCC on Windows because the backslash-quote escaping differs between
+   shells; stringifying here is portable. */
+#ifndef FLMCP_MODULE_NAME_TOKEN
+#define FLMCP_MODULE_NAME_TOKEN _flmcp_native
+#define FLMCP_MODULE_INIT PyInit__flmcp_native
+#else
+#define FLMCP_STRINGIFY_INNER(x) #x
+#define FLMCP_STRINGIFY(x) FLMCP_STRINGIFY_INNER(x)
+#define FLMCP_CONCAT_INNER(a, b) a##b
+#define FLMCP_CONCAT(a, b) FLMCP_CONCAT_INNER(a, b)
+#define FLMCP_MODULE_NAME FLMCP_STRINGIFY(FLMCP_MODULE_NAME_TOKEN)
+/* Two-level concatenation forces the token macro to expand before pasting;
+   a single PyInit_##TOKEN pastes the literal macro name instead. */
+#define FLMCP_MODULE_INIT FLMCP_CONCAT(PyInit_, FLMCP_MODULE_NAME_TOKEN)
+#endif
+
 #ifndef FLMCP_MODULE_NAME
 #define FLMCP_MODULE_NAME "_flmcp_native"
-#define FLMCP_MODULE_INIT PyInit__flmcp_native
 #endif
 
 #ifndef Py_mod_multiple_interpreters
