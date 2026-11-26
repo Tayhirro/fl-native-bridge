@@ -170,21 +170,6 @@ without writing; each inserted point is one undo step. Verified on isolated FL:
 value 0.275 vs linear 0.347). Evidence:
 `evidence/stage2-shape-tool-20261125.json`; analysis `CURVE-CONCLUSION-20261125.md`.
 
-## Mixer effect cloning (named parameters)
-
-`fl_clone_mixer_effect(source_track, source_slot, target_track, target_slot,
-dry_run)` captures the source's named public parameters, loads the same plugin
-into an empty target slot, writes the values back with per-parameter readback,
-and reports coverage. It is **not** a full-state clone: opaque preset/sample/editor
-state and unnamed VST wrapper slots are not copied — use
-`fl_read_mixer_effect_state` to compare the complete event-213 records.
-Verified on isolated FL: Fruity Balance with a distinctive knob value cloned to
-an empty slot, both named parameters matched on independent readback. Evidence:
-`evidence/stage4-clone-effect-20261125.json`. True full-state cloning needs the
-full-state route below: FL 26 has no public state-export API, and an FST built
-from scratch (rather than from FL's own factory skeleton) is rejected by the
-loader.
-
 ## Full-state Mixer effect cloning and slot swap
 
 `fl_clone_mixer_effect_full(source_track, source_slot, target_track, target_slot,

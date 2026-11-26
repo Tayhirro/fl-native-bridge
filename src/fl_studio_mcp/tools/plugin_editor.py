@@ -253,7 +253,7 @@ class PluginEditor:
                 "unexposed_controls_are_parameters": False,
             },
             "fallback": {
-                "preset_tools": ["fl_drop_asset", "fl_load_effect_preset"],
+                "preset_tools": ["fl_drop_asset", "fl_load_plugin_preset"],
                 "ui_tools": ["fl_list_windows", "fl_screenshot", "fl_plugin_editor_ui"],
             },
         }

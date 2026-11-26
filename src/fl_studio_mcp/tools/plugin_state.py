@@ -271,18 +271,6 @@ def register_plugin_state_tools(mcp):
         """Restore named public parameters after identity/name checks and later readback; skip unnamed wrapper placeholders; not transactional."""
         return PluginParameters().restore(state)
 
-    @mcp.tool()
-    def fl_clone_mixer_effect(
-        source_track: int, source_slot: int, target_track: int, target_slot: int,
-        dry_run: bool = False,
-    ) -> dict:
-        """Clone a Mixer effect's named public parameters into an empty slot.
-
-        Mixer track 0 is Master. The source must be occupied and the target empty;
-        the target loads the same plugin, then named parameters are written back
-        and read independently. NOT a full-state clone: opaque preset/sample/editor
-        state and unnamed VST wrapper slots are not copied. Use
-        fl_read_mixer_effect_state to compare full state records.
-        """
-        return clone_mixer_effect(FileRPC(), source_track, source_slot,
-                                  target_track, target_slot, dry_run)
+    # The partial parameter-only fl_clone_mixer_effect tool was removed: it was
+    # superseded by fl_clone_mixer_effect_full (complete event-213 state) and
+    # the near-identical name made MCP clients pick the wrong one.

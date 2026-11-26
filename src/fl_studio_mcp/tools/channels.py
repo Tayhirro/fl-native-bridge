@@ -29,16 +29,16 @@ def register_channel_tools(mcp: FastMCP) -> None:
         return result.get("count", 0)
 
     @mcp.tool()
-    def fl_get_channel_info(index: int, use_global_index: bool = True) -> dict:
+    def fl_get_channel_info(channel: int, use_global_index: bool = True) -> dict:
         """Get detailed information about a channel.
 
         Args:
-            index: Channel index
+            channel: Channel index (global by default)
             use_global_index: Whether to use global channel indexing
         """
         conn = get_connection()
         result = conn.send_command("channels.getInfo", {
-            "index": index,
+            "index": channel,
             "use_global": use_global_index,
         })
 
@@ -46,7 +46,7 @@ def register_channel_tools(mcp: FastMCP) -> None:
             return {"error": result["error"]}
 
         return {
-            "index": result.get("index", index),
+            "index": result.get("index", channel),
             "name": result.get("name", ""),
             "color": result.get("color", "0x0"),
             "volume": result.get("volume", 0),

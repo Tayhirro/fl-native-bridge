@@ -41,7 +41,7 @@ before its handler runs.
 | Audio/MIDI/preset drop | `fl_drop_asset` using the Windows Shell OLE data object |
 | New audio channel + optional mixer route | `fl_import_audio`; explicit readback and clip-position coverage |
 | Installed plugin presets | `fl_plugin_catalog` |
-| Effect loading | `fl_load_effect_preset`; observed drop location + slot identity readback |
+| Effect loading | `fl_load_plugin_preset`; native exact-slot load with independent readback |
 | Mixer sends/wet mix/public plugin parameters | `fl_native_set_send_level`, `fl_native_set_effect_mix`, `fl_set_effect_parameter` |
 | Pattern edits | `fl_native_clone_pattern`, `fl_native_rename_pattern`, or general native calls |
 | Selected clip time | `fl_get_selected_clip_bounds`, `fl_adjust_clip_time`; open and observe the intended clip's property editor first |
